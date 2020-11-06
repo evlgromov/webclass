@@ -9,35 +9,47 @@ import Video from '../components/Video'
 
 Vue.use(Router);
 
-const router = new Router({
+Vue.router = new Router({
   routes: [
     {
       path: '/login',
       name: 'Login',
-      component: Login
+      component: Login,
+      meta: {
+        auth: false,
+        redirect: {
+          name: 'Video'
+        }
+      },
     },
     {
       path: '/register',
       name: 'Register',
-      component: Register
+      component: Register,
+      meta: {
+        auth: false,
+        redirect: {
+          name: 'Video'
+        }
+      },
     },
     {
       path: '/video',
       name: 'Video',
-      component: Video
+      component: Video,
+      meta: {
+        auth: 'student'
+      },
+    },
+    {
+      path: '/404',
+      component: Register,
     },
     {
       path: '*',
-      redirect: '/login'
+      redirect: '/'
     }
   ]
 });
 
-router.beforeEach((to, from, next) => {
-  const haveUser = store.state.user.haveUser;
-  if (!haveUser && ['Login', 'Register'].indexOf(to.name) === -1) return next({ name: 'Login' })
-  if (haveUser && ['Login', 'Register'].indexOf(to.name) !== -1) return next({ name: 'Video' });
-  next();
-});
-
-export default router;
+export default Vue.router;

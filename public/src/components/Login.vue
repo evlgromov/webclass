@@ -8,36 +8,32 @@
 </template>
 
 <script>
-import { changeEmailLogin, changePasswordLogin } from '../store/login/mutation-actions';
-import { LOGIN } from '../store/login/action-types';
 
 export default {
+  data: () => ({
+    email: '',
+    password: '',
+  }),
+
   computed: {
-    email: {
-      get() {
-        return this.$store.state.login.email;
-      },
-      set(value) {
-        this.$store.commit(changeEmailLogin(value));
-      }
-    },
-    password: {
-      get() {
-        return this.$store.state.login.password;
-      },
-      set(value) {
-        this.$store.commit(changePasswordLogin(value));
-      }
+    loginData() {
+      return {
+        email: this.email,
+        password: this.password
+      };
     }
   },
+
   methods: {
     auth() {
-      this.$store.dispatch(LOGIN).then((haveUser) => {
-        if(haveUser) {
-          this.$router.push({name:'Video'});
-        }
+      this.$store
+      .dispatch('auth/login', {
+          data: this.loginData,
+      })
+      .then(null, (res) => {
+        console.log(res.response)
       });
     }
-  }
+  },
 }
 </script>

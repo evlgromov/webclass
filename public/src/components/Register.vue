@@ -10,50 +10,35 @@
 </template>
 
 <script>
-import * as mutations from '../store/register/mutation-actions';
-import { REGISTER } from '../store/register/action-types';
-
 export default {
+  data: () => ({
+    email: '',
+    password: '',
+    firstname: '',
+    lastname: '',
+    role: 'student',
+  }),
+
   computed: {
-    email: {
-      get() {
-        return this.$store.state.register.email;
-      },
-      set(value) {
-        this.$store.commit(mutations.changeEmailRegister(value));
-      }
-    },
-    firstname: {
-      get() {
-        return this.$store.state.register.firstname;
-      },
-      set(value) {
-        this.$store.commit(mutations.changeFirstnameRegister(value));
-      }
-    },
-    lastname: {
-      get() {
-        return this.$store.state.register.lastname;
-      },
-      set(value) {
-        this.$store.commit(mutations.changeLastnameRegister(value));
-      }
-    },
-    password: {
-      get() {
-        return this.$store.state.register.password;
-      },
-      set(value) {
-        this.$store.commit(mutations.changePasswordRegister(value));
+    registerData() {
+      return {
+        email: this.email,
+        password: this.password,
+        firstname: this.firstname,
+        lastname: this.lastname,
+        role: this.role,
       }
     }
   },
+
   methods: {
     register() {
-      this.$store.dispatch(REGISTER).then((haveUser) => {
-        if(haveUser) {
-          this.$router.push({name:'Video'});
-        }
+      this.$store
+      .dispatch('auth/register', {
+          data: this.registerData,
+      })
+      .then(null, (res) => {
+        console.log(res.response)
       });
     }
   }

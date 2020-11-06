@@ -1,14 +1,20 @@
+
+const socketioJwt = require('socketio-jwt');
+
 const User = require('./models/User');
 
 let activeUsers = [];
 
-module.exports = (io) =>
-  io.on("connection", async (socket) => {
-    const obj = socket.request.session.passport;
+module.exports = (io) => {
+  io.on("connection", socketioJwt.authorize({
+    secret: process.env.JWT_SECRET,
+    timeout: 1500
+  })).on('authenticated', async (socket) => {
+    const id = socket.decoded_token._id;
 
-    if (!obj || !obj.user) return;
+    if (!id) return;
 
-    const user = (await User.findById(obj.user)).toObject();
+    const user = (await User.findById(id)).toObject();
     user.socketId = socket.id;
 
     const existingUser = activeUsers.find(
@@ -31,7 +37,6 @@ module.exports = (io) =>
     }
 
     socket.on("call-user", (data) => {
-      console.log(data.to)
       socket.to(data.to).emit("call-made", {
         offer: data.offer,
         user: user
@@ -60,3 +65,4 @@ module.exports = (io) =>
       });
     });
   });
+}

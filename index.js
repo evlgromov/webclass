@@ -27,17 +27,13 @@ const sessionMiddleware = expressSession({
   saveUninitialized: true
 });
 
-io.use((socket, next) => {
-  sessionMiddleware(socket.request, socket.request.res, next);
-})
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
-const initPassport = require('./passport');
+require('./config/passport')(passport);
 
 const router = require('./routes');
 

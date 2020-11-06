@@ -15,9 +15,6 @@
 </template>
 
 <script>
-import { changeEmailLogin, changePasswordLogin } from '../store/login/mutation-actions';
-import { LOGIN } from '../store/login/action-types';
-
 const { RTCPeerConnection, RTCSessionDescription } = window;
 
 export default {
@@ -56,6 +53,7 @@ export default {
     },
 
     initListeners() {
+      this.socket.emit('authenticate', { token: this.$auth.token() });
       this.onUpdateUserList();
       this.onAddUser();
       this.onRemoveUser();
@@ -154,7 +152,7 @@ export default {
     this.peerConnection.ontrack = ({ streams: [stream] }) => {
       this.remoteVideo.srcObject = stream;
     };
-
+    
     this.socket = io.connect(window.location.origin);
     this.initListeners();
   }

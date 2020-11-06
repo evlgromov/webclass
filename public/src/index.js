@@ -5,16 +5,14 @@ import App from './App';
 import router from './router';
 import store from './store';
 
-import { GET_USER } from './store/user/action-types'
+import config from './config';
 
 sync(store, router)
 
-store.dispatch(GET_USER).then(() => {
-  new Vue({
-    el: '#app',
-    components: { App },
-    router,
-    store,
-    template: '<App/>'
-  });
-})
+new Vue({
+  el: '#app',
+  components: { App },
+  router,
+  store,
+  template: '<App/>'
+});
