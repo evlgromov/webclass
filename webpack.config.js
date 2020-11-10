@@ -1,6 +1,7 @@
 const path = require('path');
 
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 module.exports = {
   mode: 'development',
@@ -10,7 +11,7 @@ module.exports = {
     filename: 'index.js'
   },
   resolve: {
-    extensions: ['.js', '.vue'],
+    extensions: ['*', '.js', '.vue'],
     alias: {
       vue: 'vue/dist/vue.js'
     }
@@ -25,23 +26,59 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.css$/,
+        use: [
+          'vue-style-loader',
+          'style-loader',
+          'css-loader'
+        ],
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          'vue-style-loader',
+          'style-loader',
+          'css-loader',
+          'sass-loader'
+        ],
+      },
+      {
+        test: /\.sass$/,
+        use: [
+          'vue-style-loader',
+          'style-loader',
+          'css-loader',
+          'sass-loader?indentedSyntax'
+        ],
+      },
+      {
         test: /\.vue$/,
-        loader: 'vue-loader'
+        loader: 'vue-loader',
+        options: {
+          loaders: {
+            'scss': [
+              'vue-style-loader',
+              'style-loader',
+              'css-loader',
+              'sass-loader'
+            ],
+            'sass': [
+              'vue-style-loader',
+              'style-loader',
+              'css-loader',
+              'sass-loader?indentedSyntax'
+            ]
+          }
+        }
       },
       {
         test: /\.js$/,
         loader: 'babel-loader'
       },
-      {
-        test: /\.css$/,
-        use: [
-          'vue-style-loader',
-          'css-loader'
-        ]
-      }
     ]
   },
   plugins: [
-    new VueLoaderPlugin()
+    // new ExtractTextPlugin("style.css"),
+    new VueLoaderPlugin(),
   ]
 }

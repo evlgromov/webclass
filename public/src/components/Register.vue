@@ -1,6 +1,12 @@
 <template>
   <div class="form">
     <h1>Регистрация</h1>
+    <div id="role">
+      <input id="student" type="radio" value="student" v-model="role">
+      <label for="student">Ученик</label>
+      <input id="teacher" type="radio" value="teacher" v-model="role">
+      <label for="teacher">Учитель</label>
+    </div>
     <input v-model="email" type="text" placeholder="Электронная почта">
     <input v-model="firstname" type="text" placeholder="Имя">
     <input v-model="lastname" type="text" placeholder="Фамилия">
@@ -36,9 +42,8 @@ export default {
       this.$store
       .dispatch('auth/register', {
           data: this.registerData,
-      })
-      .then(null, (res) => {
-        console.log(res.response)
+      }).then((res) => {
+        this.$initSocket();
       });
     }
   }

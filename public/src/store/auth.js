@@ -22,6 +22,7 @@ export default {
           fetchUser: false
         }).then((res) => {
           const data = res.data.data;
+
           Vue.auth.user(data.user);
           Vue.auth.remember(JSON.stringify(ctx.getters.user));
           Vue.auth.token('jwtToken', data.jwt_token.token, data.jwt_token.expires);

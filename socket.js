@@ -18,7 +18,7 @@ module.exports = (io) => {
     user.socketId = socket.id;
 
     const existingUser = activeUsers.find(
-      (existingUser) => existingUser._id === user._id
+      (existingUser) => existingUser._id.toString() === id
     );
 
     if (!existingUser) {
@@ -35,6 +35,27 @@ module.exports = (io) => {
         user: user
       });
     }
+    // else {
+    //   socket.emit("user-already-exist");
+    //   return;
+    // }
+
+    socket.on('invite-call-user', (userId) => {
+      const user = activeUsers.find(({ _id }) => _id.toString() === userId);
+      console.log(user)
+      if (user) {
+        socket.to(user.socketId).emit("invited-call-user", {
+          user: user
+        });
+      }
+    })
+
+    socket.on("new-icecandidate", (data) => {
+      socket.to(data.to).emit("add-icecandidate", {
+        icecandidate: data.icecandidate,
+        user: user
+      });
+    });
 
     socket.on("call-user", (data) => {
       socket.to(data.to).emit("call-made", {

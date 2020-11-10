@@ -27,12 +27,11 @@ export default {
   methods: {
     auth() {
       this.$store
-      .dispatch('auth/login', {
-          data: this.loginData,
-      })
-      .then(null, (res) => {
-        console.log(res.response)
-      });
+        .dispatch('auth/login', {
+            data: this.loginData,
+        }).then((res) => {
+          this.$initSocket();
+        });
     }
   },
 }

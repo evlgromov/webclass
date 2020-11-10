@@ -1,10 +1,10 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 
-import store from '../store'
-
+import Home from '../components/Home'
 import Login from '../components/Login'
 import Register from '../components/Register'
+import Students from '../components/Students'
 import Video from '../components/Video'
 
 Vue.use(Router);
@@ -18,7 +18,7 @@ Vue.router = new Router({
       meta: {
         auth: false,
         redirect: {
-          name: 'Video'
+          name: 'Home'
         }
       },
     },
@@ -29,7 +29,7 @@ Vue.router = new Router({
       meta: {
         auth: false,
         redirect: {
-          name: 'Video'
+          name: 'Home'
         }
       },
     },
@@ -38,12 +38,28 @@ Vue.router = new Router({
       name: 'Video',
       component: Video,
       meta: {
-        auth: 'student'
+        auth: true
       },
     },
     {
-      path: '/404',
-      component: Register,
+      path: '/students',
+      name: 'Students',
+      component: Students,
+      meta: {
+        auth: {
+          roles: 'teacher'
+        }
+      },
+    },
+    {
+      path: '/',
+      component: Home,
+      meta: {
+        auth: true,
+        redirect: {
+          name: 'Login'
+        }
+      },
     },
     {
       path: '*',

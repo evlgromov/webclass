@@ -2,13 +2,11 @@ const User = require('../models/User');
 const { ErrorResponse } = require('../utils/ErrorResponse');
 
 exports.me = (req, res, next) => {
-  console.log(req.user)
   return res.status(200).json({ success: true, data: req.user });
 }
 
 exports.login = async (req, res, next) => {
   const { email, password } = req.body;
-  console.log(req.body)
 
   const user = await User.findOne({ email }).select('+password');
 

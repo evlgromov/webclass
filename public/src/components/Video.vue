@@ -1,16 +1,33 @@
 <template>
   <div class="test">
-    <div id="users">
-      <div class="user" v-for="user in users" :key="user._id">
-        <p>{{ getRole(user) }}</p>
-        <h3>{{ getName(user) }}</h3>
-        <p>{{ user.email }}</p>
-        <button @click="() => callUser(user.socketId)">Позвонить</button>
+    <div v-if="users.length" id="users">
+      <div class="user" v-for="user in users" :key="user._id" style="">
+        <p>{{ user.email }}<button @click="() => callUser(user._id)">Позвонить</button></p>
       </div>
+    </div>
+    <div id="inputs">
+      <select v-model="videoinput" id="videoinput" @change="changeInput">
+        <option v-for="videoinput in allVideoinputs" :value="videoinput.deviceId" :key="videoinput.deviceId">
+          {{videoinput.label}}
+        </option>
+      </select>
+      <select v-model="audioinput" id="audioinput" @change="changeInput">
+        <option v-for="audioinput in allAudioinputs" :value="audioinput.deviceId" :key="audioinput.deviceId">
+          {{audioinput.label}}
+        </option>
+      </select>
+      <select v-model="audiooutput" id="audiooutput" @change="changeInput">
+        <option v-for="audiooutput in allAudiooutputs" :value="audiooutput.deviceId" :key="audiooutput.deviceId">
+          {{audiooutput.label}}
+        </option>
+      </select>
+    </div>
+    <video id='localVideo' autoplay playsinline controls="false"></video>
+    <div v-if="users.length" class="remoteVideos">
+      <div v-for="user in users" :key="user._id">
+        <video :id="user._id" autoplay playsinline controls="false"></video>
       </div>
-    <video id='localVideo' autoplay playsinline></video>
-    <video id='remoteVideo' autoplay playsinline></video>
-    <button @click="init" :disabled='disabled'>Включить камеру</button>
+    </div>
   </div>
 </template>
 
@@ -19,21 +36,42 @@ const { RTCPeerConnection, RTCSessionDescription } = window;
 
 export default {
   data: () => ({
-    disabled: false,
+    allVideoinputs: [],
+    allAudioinputs: [],
+    allAudiooutputs: [],
+
+    videoinput: '',
+    audioinput: '',
+    audiooutput: '',
+
     localVideo: null,
-    remoteVideo: null,
     stream: null,
-    socket: null,
     users: [],
     isAlreadyCalling: false,
     getCalled: false,
     existingCalls: [],
     peerConnection: false,
-    constraints: {
-      audio: false,
-      video: true
-    }
   }),
+
+  computed: {    
+    constraints() {
+      const res = {};
+
+      if(this.videoinput) {
+        res.video = { deviceId: { exact: this.videoinput }};
+      } else {
+        res.video = false;
+      }
+
+      if(this.audioinput) {
+        res.audio = { deviceId: { exact: this.audioinput }};
+      } else {
+        res.audio = false;
+      }
+
+      return res
+    }
+  }, 
 
   methods: {
     getRole(user) {
@@ -44,16 +82,17 @@ export default {
       return `${user.lastname} ${user.firstname}`;
     },
 
-    init() {
+    changeInput() {
       navigator.mediaDevices.getUserMedia(this.constraints).then((stream) => {
         this.localVideo.srcObject = stream;
-        stream.getTracks().forEach(track => this.peerConnection.addTrack(track, stream));
-        this.disabled = true;
+        stream.getTracks().forEach(track => this.users.forEach((user) => user.peerConnection.addTrack(track, stream)));
       });
     },
 
     initListeners() {
-      this.socket.emit('authenticate', { token: this.$auth.token() });
+      this.$socket.emit('authenticate', { token: this.$auth.token() });
+      this.onUserAlreadyExist();
+      this.onAddIcecandidate();
       this.onUpdateUserList();
       this.onAddUser();
       this.onRemoveUser();
@@ -62,49 +101,83 @@ export default {
       this.onCallRejected();
     },
 
+    onUserAlreadyExist() {
+      this.sockets.subscribe("user-already-exist", () => {
+        alert('Вы уже вошли в видеочат')
+      });
+    },
+
+    onAddIcecandidate() {
+      this.sockets.subscribe("add-icecandidate", (data) => {
+        const user = this.users.find((user) => user._id === data.user._id);
+        user.peerConnection.addIceCandidate(new RTCIceCandidate(data.icecandidate)).catch(() => {});
+      });
+    },
+
+    initUser(user) {
+      user.peerConnection = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
+      user.peerConnection.addEventListener('icecandidate', (event) => {
+        if (event.candidate) {
+          this.$socket.emit('new-icecandidate', {
+            icecandidate: event.candidate,
+            to: user._id
+          });
+        }
+      });
+      user.peerConnection.ontrack = ({ streams: [stream] }) => {
+        document.getElementById(user._id).srcObject = stream;
+      };
+      user.peerConnection.addEventListener('connectionstatechange', event => {
+        if (user.peerConnection.connectionState === 'connected') {
+            console.log('Peers connected!' + ' user:' + user._id)
+        }
+      });
+      return user;
+    },
+
     onUpdateUserList() {
-      this.socket.on("update-user-list", ({ users }) => {console.log(users)
-        this.users = users;
+      this.sockets.subscribe('update-user-list', ({ users }) => {
+        this.users = users.map(this.initUser);
       });
     },
 
     onAddUser() {
-      this.socket.on("add-user", ({user}) => {console.log(user)
-        this.users = [...this.users, user];
+      this.sockets.subscribe("add-user", ({user}) => {
+        this.users = [...this.users, this.initUser(user)];
       });
     },
 
     onRemoveUser() {
-      this.socket.on("remove-user", ({ userId }) => {
+      this.sockets.subscribe("remove-user", ({ userId }) => {
         this.users = this.users.filter((user) => user._id !== userId);
       });
     },
 
     onCallMade() {
-      this.socket.on("call-made", (data) => {
-        console.log('call-made, from:', data.user.socketId)
+      this.sockets.subscribe("call-made", (data) => {
+        const user = this.users.find((user) => user._id === data.user._id);
+
         if (this.getCalled) {
           const confirmed = confirm(
-            `User "Socket: ${this.getName(data.user)}" wants to call you. Do accept this call?`
+            `User "Socket: ${this.getName(user)}" wants to call you. Do accept this call?`
           );
 
           if (!confirmed) {
-            this.socket.emit("reject-call", {
-              from: data.user.socketId
+            this.$socket.emit("reject-call", {
+              from: user.socketId
             });
 
             return;
           }
         }
         
-        this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
-        .then(() => this.peerConnection.createAnswer()
-          .then((answer) => this.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
+        user.peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
+        .then(() => user.peerConnection.createAnswer()
+          .then((answer) => user.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
             .then(() => {
-                console.log('make-answer, to:', data.user.socketId)
-                this.socket.emit("make-answer", {
+                this.$socket.emit("make-answer", {
                   answer,
-                  to: data.user.socketId
+                  to: user.socketId
                 });
                 this.getCalled = true;
               })
@@ -114,11 +187,12 @@ export default {
     },
 
     onAnswerMade() {
-      this.socket.on("answer-made", (data) => {
-        this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
+      this.sockets.subscribe("answer-made", (data) => {
+        const user = this.users.find((user) => user._id === data.user._id);
+
+        user.peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
           if (!this.isAlreadyCalling) {
-            console.log('answer-made, to:', data.user.socketId)
-            this.callUser(data.user.socketId);
+            this.callUser(user._id);
             this.isAlreadyCalling = true;
           }
         });
@@ -126,19 +200,19 @@ export default {
     },
 
     onCallRejected() {
-      this.socket.on("call-rejected", ({user}) => {
+      this.sockets.subscribe("call-rejected", ({user}) => {
         alert(`User: "Socket: ${this.getName(user)}" rejected your call.`);
       });
     },
 
-    callUser(socketId) {
-      console.log('call-user, to:', socketId)
-      this.peerConnection.createOffer()
+    callUser(userId) {
+      const user = this.users.find((user) => user._id === userId);
+      user.peerConnection.createOffer()
       .then((offer) => 
-        this.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
-        .then(() => this.socket.emit("call-user", {
+        user.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
+        .then(() => this.$socket.emit("call-user", {
           offer,
-          to: socketId
+          to: user.socketId
         }))
       );
     }
@@ -146,15 +220,28 @@ export default {
   },
   mounted() {
     this.localVideo = document.querySelector('#localVideo');
-    this.remoteVideo = document.querySelector('#remoteVideo');
+  
+    navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
+      deviceInfos.forEach((deviceInfo) => {
+        if(deviceInfo.kind === 'videoinput') {
+          this.allVideoinputs = [...this.allVideoinputs, deviceInfo];
+        } else if(deviceInfo.kind === 'audioinput') {
+          this.allAudioinputs = [...this.allAudioinputs, deviceInfo];
+        } else {
+          this.allAudiooutputs = [...this.allAudiooutputs, deviceInfo];
+        }
+      });
 
-    this.peerConnection = new RTCPeerConnection();
-    this.peerConnection.ontrack = ({ streams: [stream] }) => {
-      this.remoteVideo.srcObject = stream;
-    };
-    
-    this.socket = io.connect(window.location.origin);
-    this.initListeners();
+      this.allVideoinputs = [{deviceId: false, label: 'Выключить'}, ...this.allVideoinputs];
+      this.allAudioinputs = [{deviceId: false, label: 'Выключить'}, ...this.allAudioinputs];
+      this.allAudiooutputs = [{deviceId: false, label: 'Выключить'}, ...this.allAudiooutputs];
+      
+      this.videoinput = this.allVideoinputs[0].deviceId;
+      this.audioinput = this.allAudioinputs[0].deviceId;
+      this.audiooutput = this.allAudiooutputs[0].deviceId;
+
+      this.initListeners();
+    })
   }
 }
 </script>
