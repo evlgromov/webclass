@@ -40,7 +40,6 @@ export default {
     localVideo: null,
     remoteVideo: null,
 
-    callCount: 0,
     peerConnection: false,
   }),
 
@@ -77,8 +76,8 @@ export default {
     initListeners() {
       this.sockets.subscribe("add-icecandidate", this.onAddIcecandidate);
       this.sockets.subscribe('update-user-list', this.onUpdateUserList);
-      this.sockets.subscribe("add-user", this.onAddUser);
       // this.sockets.subscribe("remove-user", this.onRemoveUser);
+      this.sockets.subscribe("add-user", this.onAddUser);
       this.sockets.subscribe("call-made", this.onCallMade);
       this.sockets.subscribe("answer-made", this.onAnswerMade);
     },
@@ -91,8 +90,9 @@ export default {
       this.users = users.map(this.initUser);
     },
 
-    onAddUser({ user }) {
-      this.users = [...this.users, this.initUser(user)];
+    onAddUser() {
+      this.initPeerConnection();
+      this.changeInput();
     },
 
     onRemoveUser({ userId }) {
@@ -100,6 +100,7 @@ export default {
     },
 
     onCallMade({offer, channelId}) {
+      console.log('call-made')
       this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
       .then(() => this.peerConnection.createAnswer()
         .then((answer) => this.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
@@ -114,11 +115,12 @@ export default {
     },
 
     onAnswerMade({answer}) {
+      console.log('answer made')
       this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
     },
 
     callUser() {
-      this.callCount += 1;
+      console.log('call')
       this.peerConnection.createOffer()
       .then((offer) => 
         this.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
@@ -129,29 +131,31 @@ export default {
       );
     },
 
+    initPeerConnection() {
+      this.peerConnection = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
+      this.peerConnection.addEventListener('icecandidate', (event) => {
+        if (event.candidate) {
+          this.$socket.emit('new-icecandidate', {
+            icecandidate: event.candidate,
+          });
+        }
+      });
+      this.peerConnection.ontrack = ({ streams: [stream] }) => {
+        this.remoteVideo.srcObject = stream;
+      };
+      this.peerConnection.addEventListener('connectionstatechange', event => {
+        if (this.peerConnection.connectionState === 'connected') {
+            console.log('Peers connected!')
+        }
+      });
+    }
+
   },
   mounted() {
     this.localVideo = document.querySelector('#localVideo');
     this.remoteVideo = document.querySelector('#remoteVideo');
 
     this.channelId = this.$route.params.id;
-
-    this.peerConnection = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
-    this.peerConnection.addEventListener('icecandidate', (event) => {
-      if (event.candidate) {
-        this.$socket.emit('new-icecandidate', {
-          icecandidate: event.candidate,
-        });
-      }
-    });
-    this.peerConnection.ontrack = ({ streams: [stream] }) => {
-      this.remoteVideo.srcObject = stream;
-    };
-    this.peerConnection.addEventListener('connectionstatechange', event => {
-      if (this.peerConnection.connectionState === 'connected') {
-          console.log('Peers connected!')
-      }
-    });
   
     navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
       deviceInfos.forEach((deviceInfo) => {
@@ -172,10 +176,9 @@ export default {
       this.audioinput = this.allAudioinputs[0].deviceId;
       this.audiooutput = this.allAudiooutputs[0].deviceId;
 
+      this.initPeerConnection();
       this.initListeners();
-      if(this.$auth.user().role === 'teacher') {
-        this.callUser();
-      }
+      this.callUser();
     })
   }
 }

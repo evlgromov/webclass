@@ -9,7 +9,9 @@
       </div>
     </div>
     <div class="lesson">
-
+      <div class="lesson" v-for="lesson in lessons" @click="() => returnToLesson(lesson)" :key="lesson._id" :class="{ ended: !lesson.end }">
+        {{getFullname(lesson[reverseRole])}}
+      </div>
     </div>
     <div class="chats">
 
@@ -20,11 +22,19 @@
 <script>
 export default {
   data: () => ({
-    invite: false
+    invite: false,
+    lessons: []
   }),
+  computed: {
+    role() {
+      return this.$auth.user().role;
+    },
+    reverseRole() {
+      return this.role === 'student' ? 'teacher' : 'student';
+    }
+  },
   methods: {
     initListeners() {
-      console.log('subscribe')
       this.sockets.subscribe('invited-call-user', this.onInvitedCallUser);
       this.sockets.subscribe('return-accept-invited-call-user', this.onReturnAcceptInvite);
     },
@@ -33,7 +43,15 @@ export default {
       return `${user.firstname} ${user.lastname}`;
     },
 
+    returnToLesson(lesson) {
+      if(!lesson.end) {
+        this.$router.push(`/video/${lesson._id}`)
+        console.log('push')
+      }
+    },
+
     onInvitedCallUser({user}) {
+      console.log('invited-call-user')
       this.invite = user
     },
 
@@ -43,7 +61,6 @@ export default {
     },
 
     onReturnAcceptInvite({teacher, lessonId}) {
-      console.log('return-accept-invited-call-user')
       this.$router.push(`/video/${lessonId}`)
     },
 
@@ -54,7 +71,20 @@ export default {
   },
 
   beforeMount() {
+    this.axios.get('/api/v1/lessons')
+      .then((res) => {
+        const data = res.data;
+        if(data.success) {
+          this.lessons = data.data
+        }
+      });
     this.initListeners();
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.ended {
+  border: red 1px solid;
+}
+</style>
