@@ -1,10 +1,5 @@
 <template>
   <div class="test">
-    <div v-if="users.length" id="users">
-      <div class="user" v-for="user in users" :key="user._id" style="">
-        <p>{{ user.email }}<button @click="() => callUser(user._id)">Позвонить</button></p>
-      </div>
-    </div>
     <div id="inputs">
       <select v-model="videoinput" id="videoinput" @change="changeInput">
         <option v-for="videoinput in allVideoinputs" :value="videoinput.deviceId" :key="videoinput.deviceId">
@@ -23,11 +18,7 @@
       </select>
     </div>
     <video id='localVideo' autoplay playsinline controls="false"></video>
-    <div v-if="users.length" class="remoteVideos">
-      <div v-for="user in users" :key="user._id">
-        <video :id="user._id" autoplay playsinline controls="false"></video>
-      </div>
-    </div>
+    <video id='remoteVideo' autoplay playsinline controls="false"></video>
   </div>
 </template>
 
@@ -36,6 +27,8 @@ const { RTCPeerConnection, RTCSessionDescription } = window;
 
 export default {
   data: () => ({
+    channelId: null,
+
     allVideoinputs: [],
     allAudioinputs: [],
     allAudiooutputs: [],
@@ -45,11 +38,9 @@ export default {
     audiooutput: '',
 
     localVideo: null,
-    stream: null,
-    users: [],
-    isAlreadyCalling: false,
-    getCalled: false,
-    existingCalls: [],
+    remoteVideo: null,
+
+    callCount: 0,
     peerConnection: false,
   }),
 
@@ -74,152 +65,93 @@ export default {
   }, 
 
   methods: {
-    getRole(user) {
-      return user.role === 'student' ? 'ученик' : 'учитель';
-    },
-
-    getName(user) {
-      return `${user.lastname} ${user.firstname}`;
-    },
 
     changeInput() {
       navigator.mediaDevices.getUserMedia(this.constraints).then((stream) => {
         this.localVideo.srcObject = stream;
-        stream.getTracks().forEach(track => this.users.forEach((user) => user.peerConnection.addTrack(track, stream)));
+        stream.getTracks().forEach(track => this.peerConnection.addTrack(track, stream));
+        this.callUser();
       });
     },
 
     initListeners() {
-      this.$socket.emit('authenticate', { token: this.$auth.token() });
-      this.onUserAlreadyExist();
-      this.onAddIcecandidate();
-      this.onUpdateUserList();
-      this.onAddUser();
-      this.onRemoveUser();
-      this.onCallMade();
-      this.onAnswerMade();
-      this.onCallRejected();
+      this.sockets.subscribe("add-icecandidate", this.onAddIcecandidate);
+      this.sockets.subscribe('update-user-list', this.onUpdateUserList);
+      this.sockets.subscribe("add-user", this.onAddUser);
+      // this.sockets.subscribe("remove-user", this.onRemoveUser);
+      this.sockets.subscribe("call-made", this.onCallMade);
+      this.sockets.subscribe("answer-made", this.onAnswerMade);
     },
 
-    onUserAlreadyExist() {
-      this.sockets.subscribe("user-already-exist", () => {
-        alert('Вы уже вошли в видеочат')
-      });
+    onAddIcecandidate({icecandidate}) {
+      this.peerConnection.addIceCandidate(new RTCIceCandidate(icecandidate)).catch(() => {});
     },
 
-    onAddIcecandidate() {
-      this.sockets.subscribe("add-icecandidate", (data) => {
-        const user = this.users.find((user) => user._id === data.user._id);
-        user.peerConnection.addIceCandidate(new RTCIceCandidate(data.icecandidate)).catch(() => {});
-      });
+    onUpdateUserList({ users }) {
+      this.users = users.map(this.initUser);
     },
 
-    initUser(user) {
-      user.peerConnection = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
-      user.peerConnection.addEventListener('icecandidate', (event) => {
-        if (event.candidate) {
-          this.$socket.emit('new-icecandidate', {
-            icecandidate: event.candidate,
-            to: user._id
-          });
-        }
-      });
-      user.peerConnection.ontrack = ({ streams: [stream] }) => {
-        document.getElementById(user._id).srcObject = stream;
-      };
-      user.peerConnection.addEventListener('connectionstatechange', event => {
-        if (user.peerConnection.connectionState === 'connected') {
-            console.log('Peers connected!' + ' user:' + user._id)
-        }
-      });
-      return user;
+    onAddUser({ user }) {
+      this.users = [...this.users, this.initUser(user)];
     },
 
-    onUpdateUserList() {
-      this.sockets.subscribe('update-user-list', ({ users }) => {
-        this.users = users.map(this.initUser);
-      });
+    onRemoveUser({ userId }) {
+      this.users = this.users.filter((user) => user._id !== userId);
     },
 
-    onAddUser() {
-      this.sockets.subscribe("add-user", ({user}) => {
-        this.users = [...this.users, this.initUser(user)];
-      });
-    },
-
-    onRemoveUser() {
-      this.sockets.subscribe("remove-user", ({ userId }) => {
-        this.users = this.users.filter((user) => user._id !== userId);
-      });
-    },
-
-    onCallMade() {
-      this.sockets.subscribe("call-made", (data) => {
-        const user = this.users.find((user) => user._id === data.user._id);
-
-        if (this.getCalled) {
-          const confirmed = confirm(
-            `User "Socket: ${this.getName(user)}" wants to call you. Do accept this call?`
-          );
-
-          if (!confirmed) {
-            this.$socket.emit("reject-call", {
-              from: user.socketId
+    onCallMade({offer, channelId}) {
+      this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
+      .then(() => this.peerConnection.createAnswer()
+        .then((answer) => this.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
+          .then(() => {
+            this.$socket.emit("make-answer", {
+              answer,
+              channelId
             });
-
-            return;
-          }
-        }
-        
-        user.peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
-        .then(() => user.peerConnection.createAnswer()
-          .then((answer) => user.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
-            .then(() => {
-                this.$socket.emit("make-answer", {
-                  answer,
-                  to: user.socketId
-                });
-                this.getCalled = true;
-              })
-          )
-        );
-      });
+          })  
+        )
+      );
     },
 
-    onAnswerMade() {
-      this.sockets.subscribe("answer-made", (data) => {
-        const user = this.users.find((user) => user._id === data.user._id);
-
-        user.peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
-          if (!this.isAlreadyCalling) {
-            this.callUser(user._id);
-            this.isAlreadyCalling = true;
-          }
-        });
-      });
+    onAnswerMade({answer}) {
+      this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
     },
 
-    onCallRejected() {
-      this.sockets.subscribe("call-rejected", ({user}) => {
-        alert(`User: "Socket: ${this.getName(user)}" rejected your call.`);
-      });
-    },
-
-    callUser(userId) {
-      const user = this.users.find((user) => user._id === userId);
-      user.peerConnection.createOffer()
+    callUser() {
+      this.callCount += 1;
+      this.peerConnection.createOffer()
       .then((offer) => 
-        user.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
+        this.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
         .then(() => this.$socket.emit("call-user", {
           offer,
-          to: user.socketId
+          channelId: this.channelId
         }))
       );
-    }
+    },
 
   },
   mounted() {
     this.localVideo = document.querySelector('#localVideo');
+    this.remoteVideo = document.querySelector('#remoteVideo');
+
+    this.channelId = this.$route.params.id;
+
+    this.peerConnection = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
+    this.peerConnection.addEventListener('icecandidate', (event) => {
+      if (event.candidate) {
+        this.$socket.emit('new-icecandidate', {
+          icecandidate: event.candidate,
+        });
+      }
+    });
+    this.peerConnection.ontrack = ({ streams: [stream] }) => {
+      this.remoteVideo.srcObject = stream;
+    };
+    this.peerConnection.addEventListener('connectionstatechange', event => {
+      if (this.peerConnection.connectionState === 'connected') {
+          console.log('Peers connected!')
+      }
+    });
   
     navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
       deviceInfos.forEach((deviceInfo) => {
@@ -241,6 +173,9 @@ export default {
       this.audiooutput = this.allAudiooutputs[0].deviceId;
 
       this.initListeners();
+      if(this.$auth.user().role === 'teacher') {
+        this.callUser();
+      }
     })
   }
 }

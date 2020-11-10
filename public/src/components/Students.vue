@@ -36,6 +36,25 @@ export default {
         this.students = data;
       });
     },
+    
+    initListeners() {
+      this.sockets.subscribe('invited-call-user-offline', this.onInvitedCallUserOffline)
+      this.sockets.subscribe('accept-invited-call-user', this.onAcceptInvitedCallUser)
+      this.sockets.subscribe('refuse-invited-call-user', this.onRefuseInvitedCallUser)
+    },
+
+    onInvitedCallUserOffline({ studentId }) {
+      alert(`${this.students.find(({_id}) => _id === studentId).email} offline`)
+    },
+
+    onAcceptInvitedCallUser({ student, lessonId }) {
+      console.log('accept-invited-call-user')
+      this.$router.push(`/video/${lessonId}`)
+    },
+
+    onRefuseInvitedCallUser({ student }) {
+      alert(`${student.email}} отклонил ваше предложение`)
+    },
 
     getFullname({firstname, lastname}) {
       return `${firstname} ${lastname}`;
@@ -64,6 +83,7 @@ export default {
   },
   beforeMount() {
     this.fetchUser(null, (data) => this.students = data);
+    this.initListeners();
   }
 }
 </script>

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const Chat = new mongoose.Schema({
+const Lesson = new mongoose.Schema({
   student: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -19,4 +19,4 @@ const Chat = new mongoose.Schema({
   },
 }, { versionKey: false });
 
-module.exports = mongoose.model('Chat', Chat);
+module.exports = mongoose.model('Lesson', Lesson);

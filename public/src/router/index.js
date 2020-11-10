@@ -34,7 +34,7 @@ Vue.router = new Router({
       },
     },
     {
-      path: '/video',
+      path: '/video/:id',
       name: 'Video',
       component: Video,
       meta: {

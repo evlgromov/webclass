@@ -19,7 +19,8 @@ const app = express();
 const server = http.createServer(app);
 
 const io = socket(server);
-require('./socket')(io);
+const IoSocket = require('./socket');
+new IoSocket(io);
 
 const sessionMiddleware = expressSession({
   secret: process.env.SECRET_SESSION_KEY,
