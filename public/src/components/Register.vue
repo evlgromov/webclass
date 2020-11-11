@@ -44,6 +44,7 @@ export default {
           data: this.registerData,
       }).then((res) => {
         this.$initSocket();
+        this.$router.push('/');
       });
     }
   }

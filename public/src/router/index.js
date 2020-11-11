@@ -38,7 +38,10 @@ Vue.router = new Router({
       name: 'Video',
       component: Video,
       meta: {
-        auth: true
+        auth: true,
+        redirect: {
+          name: 'Login'
+        }
       },
     },
     {

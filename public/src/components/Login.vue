@@ -31,6 +31,7 @@ export default {
             data: this.loginData,
         }).then((res) => {
           this.$initSocket();
+          this.$router.push('/');
         });
     }
   },

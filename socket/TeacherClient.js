@@ -17,8 +17,6 @@ module.exports = class TeacherClient extends SocketClient {
     const student = this.activeUsers.find(({ _id }) => _id.toString() === userId);
 
     if (student) {
-      console.log('invited-call-user')
-      console.log(student.socketId)
       this.socket.to(student.socketId).emit("invited-call-user", {
         user: this.user
       });

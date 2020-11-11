@@ -73,11 +73,15 @@ export default {
       });
     },
 
+    initEmit() {
+      this.$socket.emit("video-sing-in", this.channelId);
+    },
+
     initListeners() {
       this.sockets.subscribe("add-icecandidate", this.onAddIcecandidate);
       this.sockets.subscribe('update-user-list', this.onUpdateUserList);
-      // this.sockets.subscribe("remove-user", this.onRemoveUser);
-      this.sockets.subscribe("add-user", this.onAddUser);
+      this.sockets.subscribe("video-remove-user", this.onVideoRemoveUser);
+      this.sockets.subscribe("video-add-user", this.onVideoAddUser);
       this.sockets.subscribe("call-made", this.onCallMade);
       this.sockets.subscribe("answer-made", this.onAnswerMade);
     },
@@ -90,13 +94,14 @@ export default {
       this.users = users.map(this.initUser);
     },
 
-    onAddUser() {
+    onVideoAddUser() {
+      console.log('video-add-user')
       this.initPeerConnection();
       this.changeInput();
     },
 
-    onRemoveUser({ userId }) {
-      this.users = this.users.filter((user) => user._id !== userId);
+    onVideoRemoveUser() {
+      console.log('Пользователь вышел')
     },
 
     onCallMade({offer, channelId}) {
@@ -178,7 +183,7 @@ export default {
 
       this.initPeerConnection();
       this.initListeners();
-      this.callUser();
+      this.initEmit();
     })
   }
 }
