@@ -8,6 +8,7 @@ module.exports = class StudentClient extends SocketClient {
 
     this.onAcceptInviteCallUser = this.onAcceptInviteCallUser.bind(this);
     this.onRefuseInviteCallUser = this.onRefuseInviteCallUser.bind(this);
+    this.onCloseVideoCall = this.onCloseVideoCall.bind(this);
 
     this.initListeners()
   }
@@ -15,6 +16,7 @@ module.exports = class StudentClient extends SocketClient {
   initListeners() {
     this.socket.on('accept-invite-call-user', this.onAcceptInviteCallUser);
     this.socket.on('refuse-invite-call-user', this.onRefuseInviteCallUser);
+    this.socket.on('close-video-call', this.onCloseVideoCall);
   }
 
   async onAcceptInviteCallUser(socketId) {
@@ -43,5 +45,14 @@ module.exports = class StudentClient extends SocketClient {
     this.socket.to(socketId).emit('refuse-invited-call-user', {
       student: this.user
     });
+  }
+
+  onCloseVideoCall() {
+    if (!this.activeVideoCall.find(({ _id }) => _id === this.currentVideoCall._id)) {
+      this.socket.leave(this.currentVideoCall._id);
+
+      this.currentVideoCall = null;
+
+    }
   }
 }

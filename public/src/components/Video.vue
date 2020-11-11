@@ -17,8 +17,13 @@
         </option>
       </select>
     </div>
-    <video id='localVideo' autoplay playsinline controls="false"></video>
-    <video id='remoteVideo' autoplay playsinline controls="false"></video>
+    <div class="videos">
+      <video id='localVideo' autoplay playsinline controls="false"></video>
+      <video id='remoteVideo' autoplay playsinline controls="false"></video>
+    </div>
+    <div class="chats">
+      <button v-if="$auth.check('teacher')" @click="endVideoCall">Завершить видео урок</button>
+    </div>
   </div>
 </template>
 
@@ -73,25 +78,41 @@ export default {
       });
     },
 
+    endVideoCall() {
+      this.$socket.emit("end-video-call");
+      this.$router.push('/');
+    },
+
     initEmit() {
       this.$socket.emit("video-sing-in", this.channelId);
     },
 
-    initListeners() {
+    subscribeListeners() {
       this.sockets.subscribe("add-icecandidate", this.onAddIcecandidate);
-      this.sockets.subscribe('update-user-list', this.onUpdateUserList);
+      this.sockets.subscribe("ended-video-call", this.onEndedVideoCall);
       this.sockets.subscribe("video-remove-user", this.onVideoRemoveUser);
       this.sockets.subscribe("video-add-user", this.onVideoAddUser);
       this.sockets.subscribe("call-made", this.onCallMade);
       this.sockets.subscribe("answer-made", this.onAnswerMade);
     },
 
+    unsubscribeListeners() {
+      this.sockets.unsubscribe("add-icecandidate");
+      this.sockets.unsubscribe("ended-video-call");
+      this.sockets.unsubscribe("video-remove-user");
+      this.sockets.unsubscribe("video-add-user");
+      this.sockets.unsubscribe("call-made");
+      this.sockets.unsubscribe("answer-made");
+    },
+
     onAddIcecandidate({icecandidate}) {
       this.peerConnection.addIceCandidate(new RTCIceCandidate(icecandidate)).catch(() => {});
     },
 
-    onUpdateUserList({ users }) {
-      this.users = users.map(this.initUser);
+    onEndedVideoCall() {
+      console.log('Видео встреча завершена');
+      this.$socket.emit('close-video-call');
+      this.$router.push('/');
     },
 
     onVideoAddUser() {
@@ -156,6 +177,13 @@ export default {
     }
 
   },
+
+  beforeRouteLeave(to, from, next) {
+    this.$socket.emit('video-sing-out');
+    this.unsubscribeListeners();
+    next();
+  },
+
   mounted() {
     this.localVideo = document.querySelector('#localVideo');
     this.remoteVideo = document.querySelector('#remoteVideo');
@@ -182,7 +210,7 @@ export default {
       this.audiooutput = this.allAudiooutputs[0].deviceId;
 
       this.initPeerConnection();
-      this.initListeners();
+      this.subscribeListeners();
       this.initEmit();
     })
   }

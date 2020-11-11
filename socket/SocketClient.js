@@ -8,12 +8,14 @@ module.exports = class SocketClient {
     this.currentVideoCall = null;
 
     this.onVideoSingIn = this.onVideoSingIn.bind(this);
+    this.onVideoSingOut = this.onVideoSingOut.bind(this);
     this.onDisconnect = this.onDisconnect.bind(this);
     this.onNewLcecandidate = this.onNewLcecandidate.bind(this);
     this.callUser = this.callUser.bind(this);
     this.onMakeAnswer = this.onMakeAnswer.bind(this);
 
     this.socket.on("video-sing-in", this.onVideoSingIn);
+    this.socket.on("video-sing-out", this.onVideoSingOut);
     this.socket.on("disconnect", this.onDisconnect);
     this.socket.on('new-icecandidate', this.onNewLcecandidate);
     this.socket.on("call-user", this.callUser);
@@ -21,9 +23,7 @@ module.exports = class SocketClient {
   }
 
   onVideoSingIn() {
-    console.log('video-sing-in')
     const videoCall = this.activeVideoCall.find((call) => call[this.user.role]._id.toString() === this.user._id.toString());
-    console.log(videoCall)
     if (videoCall) {
       this.socket.join(videoCall._id);
       videoCall[this.user.role].socketId = this.socket.id;
@@ -32,13 +32,20 @@ module.exports = class SocketClient {
     }
   }
 
+  onVideoSingOut() {
+    this.socket.broadcast.emit("video-remove-user");
+  }
+
   onDisconnect() {
     for (let i = 0; i < this.activeUsers.length; i++) {
-      if (this.activeUsers[i]._id === this.user._id) {
+      if (this.activeUsers[i]._id.toString() === this.user._id.toString()) {
         this.activeUsers.splice(i, 1);
+        break;
       }
     }
-    this.socket.broadcast.emit("video-remove-user");
+    if (this.currentVideoCall) {
+      this.socket.broadcast.emit("video-remove-user");
+    }
   }
 
   onNewLcecandidate({ icecandidate }) {
