@@ -5,8 +5,8 @@ module.exports = (client, clients, videocalls) => {
   // Только для учителя
   if (client.decoded_token.role == 'teacher') {
     /**
-     * @param {string} userId - id студента, которому присылает инвайт на видео звонок учитель.
-     * @description Создаётся видео звонок, инвайт на видео звонок от учителя.
+     * @param {string} userId - id студента, которому присылает инвайт на видеозвонок учитель.
+     * @description Создаётся видеозвонок, инвайт на видеозвонок от учителя.
      * В глобальном объекте videocalls создаётся поле [videocall._id],
      * где указываются id учителя и ученика.
      * Отсылает ученику 'invited-videocall-user' с id урока
@@ -33,10 +33,10 @@ module.exports = (client, clients, videocalls) => {
     });
 
     /**
-     * @param {string} videocallId - id видео звонка
-     * @description Завершение урока(видео звонок). 
+     * @param {string} videocallId - id видеозвонка
+     * @description Завершение урока(видеозвонок). 
      * Отсылает ученику 'ended-videocall', после этого от ученика
-     * следует 'close-videocall' и он покидает room с id видео звонка
+     * следует 'close-videocall' и он покидает room с id видеозвонка
      */
     client.on('end-videocall', async (videocallId) => {
       const videocall = await Videocall.findById(videocallId).populate('lesson');
@@ -58,9 +58,9 @@ module.exports = (client, clients, videocalls) => {
   // Только для студента
   if (client.decoded_token.role === 'student') {
     /**
-     * @param {string} videocallId - id видео звонка
-     * @description Принимает заявку на видео звонк, видео звонк начинается (start устанавливается на Date.now())
-     * Отправляет учителю 'accept-invited-videocall' с id видео звонка
+     * @param {string} videocallId - id видеозвонка
+     * @description Принимает заявку на видеозвонк, видеозвонк начинается (start устанавливается на Date.now())
+     * Отправляет учителю 'accept-invited-videocall' с id видеозвонка
      */
     client.on('accept-invite-videocall', async (videocallId) => {
       const videocall = await Videocall.findById(videocallId).populate('lesson');
@@ -77,8 +77,8 @@ module.exports = (client, clients, videocalls) => {
     });
 
     /**
-     * @param {string} videocallId - id видео звонка
-     * @description Учитель завершил видео звонок, студент выходит из room с id видео звонка.
+     * @param {string} videocallId - id видеозвонка
+     * @description Учитель завершил видеозвонок, студент выходит из room с id видеозвонка.
      */
     client.on('close-videocall', (videocallId) => {
       client.leave(videocallId);
@@ -88,9 +88,9 @@ module.exports = (client, clients, videocalls) => {
   // Общие
 
   /**
-   * @param {string} videocallId - id видео звонка
-   * @description Юзер зашёл на видео звонок.
-   * Юзер подключается к room с id видео звонка, 
+   * @param {string} videocallId - id видеозвонка
+   * @description Юзер зашёл на видеозвонок.
+   * Юзер подключается к room с id видеозвонка, 
    * отсылает в комнату 'videocall-add-user'
    */
   client.on("videocall-sing-in", (videocallId) => {
@@ -102,9 +102,9 @@ module.exports = (client, clients, videocalls) => {
   });
 
   /**
-   * @param {string} videocallId - id видео звонка
-   * @description Юзер покинул видео звонок.
-   * Юзер покидает room с id видео звонка, 
+   * @param {string} videocallId - id видеозвонка
+   * @description Юзер покинул видеозвонок.
+   * Юзер покидает room с id видеозвонка, 
    * отсылает в комнату 'videocall-remove-user'
    */
   client.on("videocall-sing-out", (videocallId) => {
@@ -118,9 +118,9 @@ module.exports = (client, clients, videocalls) => {
   /**
    * @param {Object} data - Данные, которые поступили от юзера
    * @param {RTCIceCandidate} data.icecandidate - IceCandidate юзера
-   * @param {string} data.videocallId - id видео звонка
+   * @param {string} data.videocallId - id видеозвонка
    * @description Юзер получил IceCandidate и передаёт его
-   * 2 пользователю, который находится в room с id видео звонка
+   * 2 пользователю, который находится в room с id видеозвонка
    * через 'add-icecandidate' 
    */
   client.on('videocall-new-icecandidate', (data) => {
@@ -133,9 +133,9 @@ module.exports = (client, clients, videocalls) => {
   /**
    * @param {Object} data - Данные, которые поступили от юзера
    * @param {RTCIceCandidate} data.offer - Offer юзера
-   * @param {string} data.videocallId - id видео звонка
+   * @param {string} data.videocallId - id видеозвонка
    * @description Юзер налаживает RTC соединение, отправляет
-   * другому юзеру offer. В room с id видео звонка посылается
+   * другому юзеру offer. В room с id видеозвонка посылается
    * 'videocall-call-made' с оффером 
    */
   client.on("videocall-call-user", (data) => {
@@ -148,10 +148,10 @@ module.exports = (client, clients, videocalls) => {
   /**
   * @param {Object} data - Данные, которые поступили от юзера
   * @param {RTCIceCandidate} data.offer - Answer юзера
-  * @param {string} data.videocallId - id видео звонка
+  * @param {string} data.videocallId - id видеозвонка
   * @description Юзер налаживает RTC соединение, после получения
   * offer-а от другого юзера, он посылает ему ответ. В room с id
-  * видео звонка посылается 'videocall-answer-made' с ответом 
+  * видеозвонка посылается 'videocall-answer-made' с ответом 
   */
   client.on("videocall-make-answer", (data) => {
     const videocall = videocalls[data.videocallId];
