@@ -63,6 +63,9 @@ Vue.router = new Router({
       meta: {
         auth: {
           roles: 'teacher'
+        },
+        redirect: {
+          name: 'Home'
         }
       },
     },
@@ -78,7 +81,9 @@ Vue.router = new Router({
     },
     {
       path: '*',
-      redirect: '/'
+      redirect: {
+        name: 'Login'
+      }
     }
   ]
 });

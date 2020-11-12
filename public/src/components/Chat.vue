@@ -49,54 +49,31 @@ export default {
         text: this.message,
         owner: this.$auth.user()._id
       }];
-      this.$socket.emit('send-message', this.message)
+      this.$socket.emit('chat-send-message', this.message)
       this.message = '';
     },
 
     subscribeListeners() {
-      this.sockets.subscribe('sended-message', this.onSendedMessage);
-      this.sockets.subscribe('get-second-user', this.onGetSecondUser); //set-second-user-status
-      this.sockets.subscribe('chat-add-user', this.onChatAddUser);
-      this.sockets.subscribe('chat-remove-user', this.onChatRemoveUser);
+      this.sockets.subscribe('chat-sended-message', this.onChatSendedMessage);
     },
 
     unsubscribeListeners() {
-      this.sockets.unsubscribe('sended-message');
-      this.sockets.unsubscribe('get-second-user');
-      this.sockets.unsubscribe('chat-add-user');
-      this.sockets.unsubscribe('chat-remove-user');
+      this.sockets.unsubscribe('chat-sended-message');
     },
 
     initEmit() {
-      console.log('emit')
-      console.log(this.chatId)
-      this.$socket.emit('chat-sing-in', this.chatId);
+      // console.log('emit')
+      // console.log(this.chatId)
+      // this.$socket.emit('chat-sing-in', this.chatId);
     },
 
-    onSendedMessage(data) {
-      this.messages = [...this.messages, {
-        text: data,
-        owner: this.secondUser._id
-      }];
+    onChatSendedMessage(data) {
+      this.messages = [...this.messages, { text: data }];
     },
-
-    onChatAddUser() {
-      console.log('Юзер зашёл')
-      this.secondUser.status = true;
-    },
-
-    onChatRemoveUser() {
-      console.log('Юзер вышел')
-      this.secondUser.status = false;
-    },
-
-    onGetSecondUser(user) {
-      this.secondUser = user;
-    }
   },
 
   beforeRouteLeave(to, from, next) {
-    this.$socket.emit('chat-sing-out');
+    // this.$socket.emit('chat-sing-out');
     this.unsubscribeListeners();
     next();
   },
@@ -110,11 +87,10 @@ export default {
         if(data.success) {
           this.messages = data.data;
           this.isMessagesLoaded = true;
+          this.subscribeListeners();
+          this.initEmit();
         }
       });
-
-    this.subscribeListeners();
-    this.initEmit();
   }
 }
 </script>

@@ -74,7 +74,6 @@ export default {
       this.axios.get(`/api/v1/chats?studentId=${studentId}`)
         .then((res) => {
           const data = res.data;
-          console.log(data)
           if(data.data) {
             this.$router.push(`/chat/${data.data._id}`);
           } else {
