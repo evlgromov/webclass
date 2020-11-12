@@ -10,6 +10,7 @@ module.exports = class TeacherClient extends SocketClient {
     this.onEndVideoCall = this.onEndVideoCall.bind(this);
 
     this.initListeners();
+    this.socket.emit('inited-socket');
   }
 
   initListeners() {

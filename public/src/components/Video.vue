@@ -32,7 +32,7 @@ const { RTCPeerConnection, RTCSessionDescription } = window;
 
 export default {
   data: () => ({
-    channelId: null,
+    videocallId: null,
 
     allVideoinputs: [],
     allAudioinputs: [],
@@ -84,63 +84,63 @@ export default {
     },
 
     initEmit() {
-      this.$socket.emit("video-sing-in", this.channelId);
+      this.$socket.emit("videocall-sing-in", this.videocallId);
     },
 
     subscribeListeners() {
-      this.sockets.subscribe("add-icecandidate", this.onAddIcecandidate);
-      this.sockets.subscribe("ended-video-call", this.onEndedVideoCall);
-      this.sockets.subscribe("video-remove-user", this.onVideoRemoveUser);
-      this.sockets.subscribe("video-add-user", this.onVideoAddUser);
-      this.sockets.subscribe("call-made", this.onCallMade);
-      this.sockets.subscribe("answer-made", this.onAnswerMade);
+      this.sockets.subscribe("videocall-add-icecandidate", this.onVideocallAddIcecandidate);
+      this.sockets.subscribe("ended-videocall", this.onEndedVideocall);
+      this.sockets.subscribe("videocall-remove-user", this.onVideocallRemoveUser);
+      this.sockets.subscribe("videocall-add-user", this.onVideocallAddUser);
+      this.sockets.subscribe("videocall-call-made", this.onVideocallMade);
+      this.sockets.subscribe("videocall-answer-made", this.onVideocallAnswerMade);
     },
 
     unsubscribeListeners() {
-      this.sockets.unsubscribe("add-icecandidate");
-      this.sockets.unsubscribe("ended-video-call");
+      this.sockets.unsubscribe("videocall-add-icecandidate");
+      this.sockets.unsubscribe("ended-videocall");
       this.sockets.unsubscribe("video-remove-user");
-      this.sockets.unsubscribe("video-add-user");
+      this.sockets.unsubscribe("videocall-add-user");
       this.sockets.unsubscribe("call-made");
-      this.sockets.unsubscribe("answer-made");
+      this.sockets.unsubscribe("videocall-answer-made");
     },
 
-    onAddIcecandidate({icecandidate}) {
+    onVideocallAddIcecandidate(icecandidate) {
       this.peerConnection.addIceCandidate(new RTCIceCandidate(icecandidate)).catch(() => {});
     },
 
-    onEndedVideoCall() {
+    onEndedVideocall() {
       console.log('Видео встреча завершена');
-      this.$socket.emit('close-video-call');
+      this.$socket.emit('close-videocall');
       this.$router.push('/');
     },
 
-    onVideoAddUser() {
+    onVideocallAddUser() {
       console.log('video-add-user')
       this.initPeerConnection();
       this.changeInput();
     },
 
-    onVideoRemoveUser() {
+    onVideocallRemoveUser() {
       console.log('Пользователь вышел')
     },
 
-    onCallMade({offer, channelId}) {
+    onVideocallMade(offer) {
       console.log('call-made')
       this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
       .then(() => this.peerConnection.createAnswer()
         .then((answer) => this.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
           .then(() => {
-            this.$socket.emit("make-answer", {
+            this.$socket.emit("videocall-make-answer", {
               answer,
-              channelId
+              videocallId: this.videocallId
             });
           })  
         )
       );
     },
 
-    onAnswerMade({answer}) {
+    onVideocallAnswerMade(answer) {
       console.log('answer made')
       this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
     },
@@ -150,9 +150,9 @@ export default {
       this.peerConnection.createOffer()
       .then((offer) => 
         this.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
-        .then(() => this.$socket.emit("call-user", {
+        .then(() => this.$socket.emit("videocall-call-user", {
           offer,
-          channelId: this.channelId
+          videocallId: this.videocallId
         }))
       );
     },
@@ -161,8 +161,9 @@ export default {
       this.peerConnection = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
       this.peerConnection.addEventListener('icecandidate', (event) => {
         if (event.candidate) {
-          this.$socket.emit('new-icecandidate', {
+          this.$socket.emit('videocall-new-icecandidate', {
             icecandidate: event.candidate,
+            videocallId: this.videocallId
           });
         }
       });
@@ -171,7 +172,7 @@ export default {
       };
       this.peerConnection.addEventListener('connectionstatechange', event => {
         if (this.peerConnection.connectionState === 'connected') {
-            console.log('Peers connected!')
+          console.log('Peers connected!')
         }
       });
     }
@@ -179,7 +180,7 @@ export default {
   },
 
   beforeRouteLeave(to, from, next) {
-    this.$socket.emit('video-sing-out');
+    this.$socket.emit('videocall-sing-out');
     this.unsubscribeListeners();
     next();
   },
@@ -188,7 +189,7 @@ export default {
     this.localVideo = document.querySelector('#localVideo');
     this.remoteVideo = document.querySelector('#remoteVideo');
 
-    this.channelId = this.$route.params.id;
+    this.videocallId = this.$route.params.id;
   
     navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
       deviceInfos.forEach((deviceInfo) => {
@@ -209,8 +210,10 @@ export default {
       this.audioinput = this.allAudioinputs[0].deviceId;
       this.audiooutput = this.allAudiooutputs[0].deviceId;
 
+
       this.initPeerConnection();
       this.subscribeListeners();
+
       this.initEmit();
     })
   }

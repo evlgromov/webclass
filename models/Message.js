@@ -16,7 +16,7 @@ const Message = new mongoose.Schema({
     maxlength: 10000,
     required: true
   },
-  read: {
+  notRead: {
     type: Boolean
   }
 }, { versionKey: false });

@@ -16,7 +16,7 @@
           <td>{{ student.email }}</td>
           <td>
             <button @click="() => callStudent(student._id)">Позвонить</button>
-            <button>Написать</button>
+            <button @click="() => writeStudent(student._id)">Написать</button>
           </td>
         </tr>
       </table>
@@ -38,22 +38,11 @@ export default {
     },
     
     initListeners() {
-      this.sockets.subscribe('invited-call-user-offline', this.onInvitedCallUserOffline)
-      this.sockets.subscribe('accept-invited-call-user', this.onAcceptInvitedCallUser)
-      this.sockets.subscribe('refuse-invited-call-user', this.onRefuseInvitedCallUser)
+      this.sockets.subscribe('accept-invited-videocall', this.onAcceptInvitedVideocall)
     },
 
-    onInvitedCallUserOffline({ studentId }) {
-      alert(`${this.students.find(({_id}) => _id === studentId).email} offline`)
-    },
-
-    onAcceptInvitedCallUser({ student, lessonId }) {
-      console.log('accept-invited-call-user')
-      this.$router.push(`/video/${lessonId}`)
-    },
-
-    onRefuseInvitedCallUser({ student }) {
-      alert(`${student.email}} отклонил ваше предложение`)
+    onAcceptInvitedVideocall(videocallId) {
+      this.$router.push(`/video/${videocallId}`)
     },
 
     getFullname({firstname, lastname}) {
@@ -78,8 +67,24 @@ export default {
     },
 
     callStudent(studentId) {
-      this.$socket.emit('invite-call-user', studentId);
-    }
+      this.$socket.emit('invite-videocall-user', studentId);
+    },
+
+    writeStudent(studentId) {
+      this.axios.get(`/api/v1/chats?studentId=${studentId}`)
+        .then((res) => {
+          const data = res.data;
+          console.log(data)
+          if(data.data) {
+            this.$router.push(`/chat/${data.data._id}`);
+          } else {
+            if(!data.error) {
+              this.axios.post('/api/v1/chats', {studentId})
+                .then((res) => this.$router.push(`/chat/${res.data.data._id}`))
+            }
+          }
+        })
+    },
   },
   beforeMount() {
     this.fetchUser(null, (data) => this.students = data);

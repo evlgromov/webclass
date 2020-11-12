@@ -11,12 +11,6 @@ const Lesson = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  start: {
-    type: Date
-  },
-  end: {
-    type: Date
-  },
 }, { versionKey: false });
 
 module.exports = mongoose.model('Lesson', Lesson);

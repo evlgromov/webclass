@@ -6,6 +6,7 @@ import Login from '../components/Login'
 import Register from '../components/Register'
 import Students from '../components/Students'
 import Video from '../components/Video'
+import Chat from '../components/Chat'
 
 Vue.use(Router);
 
@@ -37,6 +38,17 @@ Vue.router = new Router({
       path: '/video/:id',
       name: 'Video',
       component: Video,
+      meta: {
+        auth: true,
+        redirect: {
+          name: 'Login'
+        }
+      },
+    },
+    {
+      path: '/chat/:id',
+      name: 'Chat',
+      component: Chat,
       meta: {
         auth: true,
         redirect: {

@@ -2,10 +2,9 @@
   <div class="home">
     <div v-if="invite" class="invite">
       <h2>Видео урок</h2>
-      <p>{{getFullname(invite)}} приглашает вас на видео урок</p>
+      <p>Вас приглашают на видео урок</p>
       <div class="actions">
-        <button @click="acceptInvite">Принять</button>
-        <button @click="refuseInvite">Отказать</button>
+        <button @click="acceptInvite">Перейти</button>
       </div>
     </div>
     <div class="lesson">
@@ -35,8 +34,8 @@ export default {
   },
   methods: {
     initListeners() {
-      this.sockets.subscribe('invited-call-user', this.onInvitedCallUser);
-      this.sockets.subscribe('return-accept-invited-call-user', this.onReturnAcceptInvite);
+      this.sockets.subscribe('invited-videocall-user', this.onInvitedVideocallUser);
+      this.sockets.subscribe('return-accept-invited-videocall', this.onReturnAcceptInvitedVideocall);
     },
 
     getFullname(user) {
@@ -50,23 +49,17 @@ export default {
       }
     },
 
-    onInvitedCallUser({user}) {
-      console.log('invited-call-user')
-      this.invite = user
+    onInvitedVideocallUser(videocallId) {
+      this.invite = videocallId;
     },
 
     acceptInvite() {
-      this.$socket.emit('accept-invite-call-user', this.invite.socketId);
+      this.$socket.emit('accept-invite-videocall', this.invite);
       this.invite = false;
     },
 
-    onReturnAcceptInvite({teacher, lessonId}) {
-      this.$router.push(`/video/${lessonId}`)
-    },
-
-    refuseInvite() {
-      this.$socket.emit('refuse-invite-call-user', this.invite.socketId);
-      this.invite = false;
+    onReturnAcceptInvitedVideocall(videocallId) {
+      this.$router.push(`/video/${videocallId}`)
     },
   },
 

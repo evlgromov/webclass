@@ -10,7 +10,8 @@ module.exports = class StudentClient extends SocketClient {
     this.onRefuseInviteCallUser = this.onRefuseInviteCallUser.bind(this);
     this.onCloseVideoCall = this.onCloseVideoCall.bind(this);
 
-    this.initListeners()
+    this.initListeners();
+    this.socket.emit('inited-socket');
   }
 
   initListeners() {

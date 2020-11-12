@@ -1,5 +1,4 @@
 const express = require('express');
-const socket = require('socket.io');
 const http = require('http');
 const passport = require('passport');
 
@@ -18,9 +17,7 @@ const app = express();
 
 const server = http.createServer(app);
 
-const io = socket(server);
-const IoSocket = require('./socket');
-new IoSocket(io);
+require('./socket')(server, app);
 
 const sessionMiddleware = expressSession({
   secret: process.env.SECRET_SESSION_KEY,
