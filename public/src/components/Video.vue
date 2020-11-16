@@ -1,17 +1,17 @@
 <template>
   <div class="test">
     <div id="inputs">
-      <select v-model="videoinput" id="videoinput" @change="changeInput">
+      <select v-model="videoinput" id="videoinput" @change="onVideocallCallUser">
         <option v-for="videoinput in allVideoinputs" :value="videoinput.deviceId" :key="videoinput.deviceId">
           {{videoinput.label}}
         </option>
       </select>
-      <select v-model="audioinput" id="audioinput" @change="changeInput">
+      <select v-model="audioinput" id="audioinput" @change="onVideocallCallUser">
         <option v-for="audioinput in allAudioinputs" :value="audioinput.deviceId" :key="audioinput.deviceId">
           {{audioinput.label}}
         </option>
       </select>
-      <select v-model="audiooutput" id="audiooutput" @change="changeInput">
+      <select v-model="audiooutput" id="audiooutput" @change="onVideocallCallUser">
         <option v-for="audiooutput in allAudiooutputs" :value="audiooutput.deviceId" :key="audiooutput.deviceId">
           {{audiooutput.label}}
         </option>
@@ -28,7 +28,7 @@
 </template>
 
 <script>
-const { RTCPeerConnection, RTCSessionDescription } = window;
+import kurentoUtils from 'kurento-utils';
 
 export default {
   data: () => ({
@@ -45,7 +45,7 @@ export default {
     localVideo: null,
     remoteVideo: null,
 
-    peerConnection: false,
+    webRtcPeer: false,
   }),
 
   computed: {    
@@ -70,14 +70,6 @@ export default {
 
   methods: {
 
-    changeInput() {
-      navigator.mediaDevices.getUserMedia(this.constraints).then((stream) => {
-        this.localVideo.srcObject = stream;
-        stream.getTracks().forEach(track => this.peerConnection.addTrack(track, stream));
-        this.callUser();
-      });
-    },
-
     endVideoCall() {
       this.$socket.emit("end-video-call");
       this.$router.push('/');
@@ -92,7 +84,8 @@ export default {
       this.sockets.subscribe("ended-videocall", this.onEndedVideocall);
       this.sockets.subscribe("videocall-remove-user", this.onVideocallRemoveUser);
       this.sockets.subscribe("videocall-add-user", this.onVideocallAddUser);
-      this.sockets.subscribe("videocall-call-made", this.onVideocallMade);
+      this.sockets.subscribe("videocall-exist-user", this.onVideocallExistUser);
+      this.sockets.subscribe("videocall-called-user", this.onVideocallCalledUser);
       this.sockets.subscribe("videocall-answer-made", this.onVideocallAnswerMade);
     },
 
@@ -101,12 +94,12 @@ export default {
       this.sockets.unsubscribe("ended-videocall");
       this.sockets.unsubscribe("video-remove-user");
       this.sockets.unsubscribe("videocall-add-user");
-      this.sockets.unsubscribe("call-made");
-      this.sockets.unsubscribe("videocall-answer-made");
+      this.sockets.unsubscribe("videocall-exist-user");
+      this.sockets.unsubscribe("videocall-called-user");
     },
 
     onVideocallAddIcecandidate(icecandidate) {
-      this.peerConnection.addIceCandidate(new RTCIceCandidate(icecandidate)).catch(() => {});
+      this.webRtcPeer.addIceCandidate(icecandidate);
     },
 
     onEndedVideocall() {
@@ -117,66 +110,94 @@ export default {
 
     onVideocallAddUser() {
       console.log('video-add-user')
-      this.initPeerConnection();
-      this.changeInput();
+      // this.initWebRtcPeer();
+    },
+
+    onVideocallExistUser() {
+      this.onVideocallCallUser();
+    },
+
+    onVideocallCallUser() {
+      this.initWebRtcPeer("videocall-call-user");
+    },
+
+    onVideocallCalledUser() {
+      console.log('videocall-answer-user')
+      this.initWebRtcPeer("videocall-answer-user");
     },
 
     onVideocallRemoveUser() {
       console.log('Пользователь вышел')
     },
 
-    onVideocallMade(offer) {
-      console.log('call-made')
-      this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
-      .then(() => this.peerConnection.createAnswer()
-        .then((answer) => this.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
-          .then(() => {
-            this.$socket.emit("videocall-make-answer", {
-              answer,
-              videocallId: this.videocallId
-            });
-          })  
-        )
-      );
-    },
-
     onVideocallAnswerMade(answer) {
-      console.log('answer made')
-      this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
+      console.log('videocall-answer-made')
+      this.webRtcPeer.processAnswer(answer);
     },
 
-    callUser() {
-      console.log('call')
-      this.peerConnection.createOffer()
-      .then((offer) => 
-        this.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
-        .then(() => this.$socket.emit("videocall-call-user", {
-          offer,
-          videocallId: this.videocallId
-        }))
-      );
-    },
-
-    initPeerConnection() {
-      this.peerConnection = new RTCPeerConnection({'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]});
-      this.peerConnection.addEventListener('icecandidate', (event) => {
-        if (event.candidate) {
+    initWebRtcPeer(emitName) {
+      console.log('initWebRtcPeer')
+      const options = {
+        localVideo: this.localVideo,
+        remoteVideo: this.remoteVideo,
+        onicecandidate: (candidate) => {
           this.$socket.emit('videocall-new-icecandidate', {
             icecandidate: event.candidate,
             videocallId: this.videocallId
           });
-        }
-      });
-      this.peerConnection.ontrack = ({ streams: [stream] }) => {
-        this.remoteVideo.srcObject = stream;
-      };
-      this.peerConnection.addEventListener('connectionstatechange', event => {
-        if (this.peerConnection.connectionState === 'connected') {
-          console.log('Peers connected!')
-        }
+        },
+        mediaConstraints: this.constraints,
+        configuration: { 
+        iceServers: [
+		      { url: 'stun:l.google.com:19302' },
+		      {
+            url: 'turn:numb.viagenie.ca',
+            credential: 'muazkh',
+            username: 'webrtc@live.com'
+          },
+          {
+            url: 'turn:192.158.29.39:3478?transport=udp',
+            credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+            username: '28224511:1379330808'
+          },
+          {
+            url: 'turn:192.158.29.39:3478?transport=tcp',
+            credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+            username: '28224511:1379330808'
+          },
+          {
+            url: 'turn:turn.bistri.com:80',
+            credential: 'homeo',
+            username: 'homeo'
+          },
+          {
+            url: 'turn:turn.anyfirewall.com:443?transport=tcp',
+            credential: 'webrtc',
+            username: 'webrtc'
+          }
+		    ]}
+      }
+
+      // stun.l.google.com:19302
+      // stun1.l.google.com:19302
+      // stun2.l.google.com:19302
+      // stun3.l.google.com:19302
+      // stun4.l.google.com:19302
+
+      const videocallId = this.videocallId;
+      const socket = this.$socket;
+      this.webRtcPeer = kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options, function(error) {
+        this.generateOffer(function(error, offer) {
+          if (error) {
+            console.error(error);
+          }
+          socket.emit(emitName, {
+            offer,
+            videocallId
+          })
+        });
       });
     }
-
   },
 
   beforeRouteLeave(to, from, next) {
@@ -206,15 +227,16 @@ export default {
       this.allAudioinputs = [{deviceId: false, label: 'Выключить'}, ...this.allAudioinputs];
       this.allAudiooutputs = [{deviceId: false, label: 'Выключить'}, ...this.allAudiooutputs];
       
-      this.videoinput = this.allVideoinputs[0].deviceId;
+      this.videoinput = this.allVideoinputs[1].deviceId;
       this.audioinput = this.allAudioinputs[0].deviceId;
       this.audiooutput = this.allAudiooutputs[0].deviceId;
 
-
-      this.initPeerConnection();
       this.subscribeListeners();
 
       this.initEmit();
+      if(this.$auth.user().role === 'teacher') {
+        this.onVideocallCallUser();
+      }
     })
   }
 }

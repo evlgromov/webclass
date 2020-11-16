@@ -1,7 +1,11 @@
+const kurento = require('kurento-client');
+
 const Videocall = require('../models/Videocall');
 const Lesson = require('../models/Lesson');
 
-module.exports = (client, clients, videocalls) => {
+const reverseRole = (role) => role === 'student' ? 'teacher' : 'student';
+
+module.exports = (client, clients, videocalls, kurentoClient, candidatesQueue) => {
   // Только для учителя
   if (client.decoded_token.role == 'teacher') {
     /**
@@ -98,6 +102,10 @@ module.exports = (client, clients, videocalls) => {
     if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
       client.join(videocallId);
       client.to(videocallId).emit("videocall-add-user");
+      const secondUser = clients[videocall[reverseRole(client.decoded_token._id)]];
+      if (secondUser && secondUser.offer) {
+        client.emit('videocall-exist-user');
+      }
     }
   });
 
@@ -125,8 +133,18 @@ module.exports = (client, clients, videocalls) => {
    */
   client.on('videocall-new-icecandidate', (data) => {
     const videocall = videocalls[data.videocallId];
-    if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
-      client.to(data.videocallId).emit("videocall-add-icecandidate", data.icecandidate);
+    const id = client.decoded_token._id;
+    if (videocall && videocall[client.decoded_token.role] === id) {
+      const icecandidate = kurento.getComplexType('IceCandidate')(data.icecandidate);
+      if (clients[id].webRtcEndpoint) {
+        clients[id].webRtcEndpoint.addIceCandidate(icecandidate);
+        client.to(data.videocallId).emit("videocall-add-icecandidate", data.icecandidate);
+      } else {
+        if (!candidatesQueue[id]) {
+          candidatesQueue[id] = [];
+        }
+        candidatesQueue[id].push(icecandidate);
+      }
     }
   });
 
@@ -141,7 +159,9 @@ module.exports = (client, clients, videocalls) => {
   client.on("videocall-call-user", (data) => {
     const videocall = videocalls[data.videocallId];
     if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
-      client.to(data.videocallId).emit("videocall-call-made", data.offer);
+      const firstUser = clients[client.decoded_token._id];
+      firstUser.offer = data.offer;
+      client.to(data.videocallId).emit("videocall-called-user");
     }
   });
 
@@ -153,10 +173,54 @@ module.exports = (client, clients, videocalls) => {
   * offer-а от другого юзера, он посылает ему ответ. В room с id
   * видеозвонка посылается 'videocall-answer-made' с ответом 
   */
-  client.on("videocall-make-answer", (data) => {
+  client.on("videocall-answer-user", async (data) => {
     const videocall = videocalls[data.videocallId];
     if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
-      client.to(data.videocallId).emit("videocall-answer-made", data.answer);
+      const firstUser = clients[client.decoded_token._id];
+      firstUser.offer = data.offer;
+      const secondUser = clients[videocall[reverseRole(firstUser.role)]];
+      if (secondUser.offer) {
+        console.log('create pipeline')
+        const pipeline = await kurentoClient.create('MediaPipeline');
+
+        const firstUserWebRtcEndpoint = await pipeline.create('WebRtcEndpoint');
+        if (candidatesQueue[firstUser._id]) {
+          while (candidatesQueue[firstUser._id].length) {
+            firstUserWebRtcEndpoint.addIceCandidate(candidatesQueue[firstUser._id].shift());
+          }
+        }
+        firstUserWebRtcEndpoint.on('OnIceCandidate', function ({ candidate }) {
+          icecandidate = kurento.getComplexType('IceCandidate')(candidate);
+          client.emit("videocall-add-icecandidate", icecandidate);
+        });
+
+        const secondUserWebRtcEndpoint = await pipeline.create('WebRtcEndpoint');
+        if (candidatesQueue[secondUser._id]) {
+          while (candidatesQueue[secondUser._id].length) {
+            secondUserWebRtcEndpoint.addIceCandidate(candidatesQueue[secondUser._id].shift());
+          }
+        }
+        secondUserWebRtcEndpoint.on('OnIceCandidate', function ({ candidate }) {
+          icecandidate = kurento.getComplexType('IceCandidate')(candidate);
+          client.emit("videocall-add-icecandidate", icecandidate);
+        });
+
+        await firstUserWebRtcEndpoint.connect(secondUserWebRtcEndpoint);
+        await secondUserWebRtcEndpoint.connect(firstUserWebRtcEndpoint);
+
+        const firstUserAnswer = await firstUserWebRtcEndpoint.processOffer(firstUser.offer);
+        firstUserWebRtcEndpoint.gatherCandidates();
+        const secondUserAnswer = await secondUserWebRtcEndpoint.processOffer(secondUser.offer);
+        secondUserWebRtcEndpoint.gatherCandidates();
+
+        firstUser.webRtcEndpoint = firstUserWebRtcEndpoint
+        secondUser.webRtcEndpoint = secondUserWebRtcEndpoint
+
+        client.emit("videocall-answer-made", firstUserAnswer);
+        client.to(data.videocallId).emit("videocall-answer-made", secondUserAnswer);
+      }
+    } else {
+      console.log('not')
     }
   });
 }
