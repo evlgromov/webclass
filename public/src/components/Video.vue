@@ -1,47 +1,34 @@
 <template>
-  <div class="video-container mt-3">
-    <div class="card-search card ml-3 mr-3">
-      <div class="card-search_container d-flex justify-content-around w-100">
-        <div class="p-2 card-search_selectGroup">
-          <select id="videoinput" v-model="videoinput" class="form-control" @change="changeInput">
-            <option v-for="videoinput in allVideoinputs" :key="videoinput.deviceId" :value="videoinput.deviceId">
-              {{ videoinput.label }}
-            </option>
-          </select>
-        </div>
-        <div class="p-2 card-search_selectGroup">
-          <select id="audioinput" v-model="audioinput" class="form-control" @change="changeInput">
-            <option v-for="audioinput in allAudioinputs" :key="audioinput.deviceId" :value="audioinput.deviceId">
-              {{ audioinput.label }}
-            </option>
-          </select>
-        </div>
-        <div class="p-2 card-search_selectGroup">
-          <select id="audiooutput" v-model="audiooutput" class="form-control" @change="changeInput">
-            <option v-for="audiooutput in allAudiooutputs" :key="audiooutput.deviceId" :value="audiooutput.deviceId">
-              {{ audiooutput.label }}
-            </option>
-          </select>
-        </div>
-      </div>
+  <div class="test">
+    <div id="inputs">
+      <select v-model="videoinput" id="videoinput" @change="changeInput">
+        <option v-for="videoinput in allVideoinputs" :value="videoinput.deviceId" :key="videoinput.deviceId">
+          {{videoinput.label}}
+        </option>
+      </select>
+      <select v-model="audioinput" id="audioinput" @change="changeInput">
+        <option v-for="audioinput in allAudioinputs" :value="audioinput.deviceId" :key="audioinput.deviceId">
+          {{audioinput.label}}
+        </option>
+      </select>
+      <select v-model="audiooutput" id="audiooutput" @change="changeInput">
+        <option v-for="audiooutput in allAudiooutputs" :value="audiooutput.deviceId" :key="audiooutput.deviceId">
+          {{audiooutput.label}}
+        </option>
+      </select>
     </div>
-    <div class="card-video d-flex">
-      <div class="card-video_item card">
-        <video id='localVideo' autoplay controls="false" playsinline></video>
-      </div>
-      <div class="card-video_item card">
-        <video id='remoteVideo' autoplay controls="false" playsinline></video>
-      </div>
+    <div class="videos">
+      <video id='localVideo' autoplay playsinline controls="false"></video>
+      <video id='remoteVideo' autoplay playsinline controls="false"></video>
     </div>
-    <div class="chats text-center m-3">
-      <button class="btn btn-outline-danger w-50" type="button">{{ $t('video.exit') }}</button>
+    <div class="chats">
       <button v-if="$auth.check('teacher')" @click="endVideoCall">Завершить видео урок</button>
     </div>
   </div>
 </template>
 
 <script>
-const {RTCPeerConnection, RTCSessionDescription} = window;
+const { RTCPeerConnection, RTCSessionDescription } = window;
 
 export default {
   data: () => ({
@@ -61,25 +48,25 @@ export default {
     peerConnection: false,
   }),
 
-  computed: {
+  computed: {    
     constraints() {
       const res = {};
 
-      if (this.videoinput) {
-        res.video = {deviceId: {exact: this.videoinput}};
+      if(this.videoinput) {
+        res.video = { deviceId: { exact: this.videoinput }};
       } else {
         res.video = false;
       }
 
-      if (this.audioinput) {
-        res.audio = {deviceId: {exact: this.audioinput}};
+      if(this.audioinput) {
+        res.audio = { deviceId: { exact: this.audioinput }};
       } else {
         res.audio = false;
       }
 
       return res
     }
-  },
+  }, 
 
   methods: {
 
@@ -119,8 +106,7 @@ export default {
     },
 
     onAddIcecandidate({icecandidate}) {
-      this.peerConnection.addIceCandidate(new RTCIceCandidate(icecandidate)).catch(() => {
-      });
+      this.peerConnection.addIceCandidate(new RTCIceCandidate(icecandidate)).catch(() => {});
     },
 
     onEndedVideoCall() {
@@ -142,16 +128,16 @@ export default {
     onCallMade({offer, channelId}) {
       console.log('call-made')
       this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
-          .then(() => this.peerConnection.createAnswer()
-              .then((answer) => this.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
-                  .then(() => {
-                    this.$socket.emit("make-answer", {
-                      answer,
-                      channelId
-                    });
-                  })
-              )
-          );
+      .then(() => this.peerConnection.createAnswer()
+        .then((answer) => this.peerConnection.setLocalDescription(new RTCSessionDescription(answer))
+          .then(() => {
+            this.$socket.emit("make-answer", {
+              answer,
+              channelId
+            });
+          })  
+        )
+      );
     },
 
     onAnswerMade({answer}) {
@@ -162,13 +148,13 @@ export default {
     callUser() {
       console.log('call')
       this.peerConnection.createOffer()
-          .then((offer) =>
-              this.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
-                  .then(() => this.$socket.emit("call-user", {
-                    offer,
-                    channelId: this.channelId
-                  }))
-          );
+      .then((offer) => 
+        this.peerConnection.setLocalDescription(new RTCSessionDescription(offer))
+        .then(() => this.$socket.emit("call-user", {
+          offer,
+          channelId: this.channelId
+        }))
+      );
     },
 
     initPeerConnection() {
@@ -180,12 +166,12 @@ export default {
           });
         }
       });
-      this.peerConnection.ontrack = ({streams: [stream]}) => {
+      this.peerConnection.ontrack = ({ streams: [stream] }) => {
         this.remoteVideo.srcObject = stream;
       };
       this.peerConnection.addEventListener('connectionstatechange', event => {
         if (this.peerConnection.connectionState === 'connected') {
-          console.log('Peers connected!')
+            console.log('Peers connected!')
         }
       });
     }
@@ -203,22 +189,22 @@ export default {
     this.remoteVideo = document.querySelector('#remoteVideo');
 
     this.channelId = this.$route.params.id;
-
+  
     navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
       deviceInfos.forEach((deviceInfo) => {
-        if (deviceInfo.kind === 'videoinput') {
+        if(deviceInfo.kind === 'videoinput') {
           this.allVideoinputs = [...this.allVideoinputs, deviceInfo];
-        } else if (deviceInfo.kind === 'audioinput') {
+        } else if(deviceInfo.kind === 'audioinput') {
           this.allAudioinputs = [...this.allAudioinputs, deviceInfo];
         } else {
           this.allAudiooutputs = [...this.allAudiooutputs, deviceInfo];
         }
       });
 
-      this.allVideoinputs = [{deviceId: false, label: this.$t('video.videoInputs')}, ...this.allVideoinputs];
-      this.allAudioinputs = [{deviceId: false, label: this.$t('video.videoInputs')}, ...this.allAudioinputs];
-      this.allAudiooutputs = [{deviceId: false, label: this.$t('video.videoInputs')}, ...this.allAudiooutputs];
-
+      this.allVideoinputs = [{deviceId: false, label: 'Выключить'}, ...this.allVideoinputs];
+      this.allAudioinputs = [{deviceId: false, label: 'Выключить'}, ...this.allAudioinputs];
+      this.allAudiooutputs = [{deviceId: false, label: 'Выключить'}, ...this.allAudiooutputs];
+      
       this.videoinput = this.allVideoinputs[0].deviceId;
       this.audioinput = this.allAudioinputs[0].deviceId;
       this.audiooutput = this.allAudiooutputs[0].deviceId;
@@ -230,59 +216,3 @@ export default {
   }
 }
 </script>
-<style lang="scss" scoped>
-.card-search_selectGroup {
-  width: 30%;
-}
-
-.card-video {
-  &_item {
-    padding: 0.7em;
-    margin: 1em;
-
-    video {
-      height: 450px;
-      min-height: 250px;
-    }
-  }
-}
-
-.w-30 {
-  width: 30% !important;
-}
-
-@media only screen and (max-width: 768px) {
-  .card-video {
-    flex-direction: column;
-
-    &_item {
-      margin: 1em 0.5em 0.5em;
-    }
-
-    video {
-      height: 450px;
-      min-height: 250px;
-    }
-  }
-}
-
-@media screen and (max-width: 430px) {
-  .card-search {
-    &_selectGroup {
-      width: 100%;
-    }
-
-    &_container {
-      flex-direction: column;
-    }
-  }
-
-  .card-video {
-    video {
-      height: 300px;
-      min-height: 250px;
-    }
-  }
-
-}
-</style>

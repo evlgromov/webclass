@@ -24,10 +24,6 @@ exports.login = async (req, res, next) => {
 exports.register = async (req, res, next) => {
   const { email, password, firstname, lastname, role } = req.body;
 
-  if (!password || !/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,24}$/.test(password)) {
-    return next(new ErrorResponse('Пароль должен содержать от 6 до 24 символов, иметь 1 цифру, 1 заглавную и 1 строчную букву', 400));
-  }
-
   const hashPassword = await User.hashPassword(password);
 
   const user = await User.create({ email, password: hashPassword, firstname, lastname, role });

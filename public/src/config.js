@@ -26,9 +26,11 @@ Vue.prototype.$initSocket = function () {
     },
   }));
 
+  // this.sockets.subscribe('inited-socket', () => console.log('init'))
   this.$socket.on('connect', () => {
     this.$store.commit(setSocketConnect());
     this.$socket.emit('authenticate', { token: this.$auth.token() });
+    console.log('connect')
   })
 }
 
