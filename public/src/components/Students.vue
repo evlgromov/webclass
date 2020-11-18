@@ -1,22 +1,31 @@
 <template>
   <div class="warp">
-    <div class="find">
-      <input v-model="email" type="text" placeholder="Электронная почта">
-      <button @click="search">Поиск</button>
+    <div class="text-center">
+      <div class="form-inline mt-3">
+        <div class="input-group col-md-4">
+          <input v-model="email" class="form-control py-2 border-right-0 border" :placeholder="$t('auth.email')"
+                 type="text">
+          <span class="input-group-append">
+            <button class="btn btn_search btn-outline-secondary border-left-0 border" type="button" @click="search">
+              <i class="fa fa-search"></i>
+            </button>
+          </span>
+        </div>
+      </div>
     </div>
-    <div class="students">
-      <table>
+    <div class="students p-3">
+      <table class="table table-hover">
         <tr>
-          <td>ФИО ученика</td>
-          <td>Электронная почта</td>
-          <td>Действия</td>
+          <td>{{ $t('students.fio') }}</td>
+          <td>{{$t('auth.email')}}</td>
+          <td>{{ $t('students.actions') }}</td>
         </tr>
         <tr v-for="student in students" :key="student._id">
           <td>{{ getFullname(student) }}</td>
           <td>{{ student.email }}</td>
           <td>
-            <button @click="() => callStudent(student._id)">Позвонить</button>
-            <button>Написать</button>
+            <button @click="() => callStudent(student._id)">{{ $t('students.сall') }}</button>
+            <button>{{ $t('students.write') }}</button>
           </td>
         </tr>
       </table>
@@ -36,23 +45,23 @@ export default {
         this.students = data;
       });
     },
-    
+
     initListeners() {
       this.sockets.subscribe('invited-call-user-offline', this.onInvitedCallUserOffline)
       this.sockets.subscribe('accept-invited-call-user', this.onAcceptInvitedCallUser)
       this.sockets.subscribe('refuse-invited-call-user', this.onRefuseInvitedCallUser)
     },
 
-    onInvitedCallUserOffline({ studentId }) {
+    onInvitedCallUserOffline({studentId}) {
       alert(`${this.students.find(({_id}) => _id === studentId).email} offline`)
     },
 
-    onAcceptInvitedCallUser({ student, lessonId }) {
+    onAcceptInvitedCallUser({student, lessonId}) {
       console.log('accept-invited-call-user')
       this.$router.push(`/video/${lessonId}`)
     },
 
-    onRefuseInvitedCallUser({ student }) {
+    onRefuseInvitedCallUser({student}) {
       alert(`${student.email}} отклонил ваше предложение`)
     },
 
@@ -62,19 +71,19 @@ export default {
 
     fetchUser(query, cb) {
       let url = '/api/v1/students';
-      if(query) {
+      if (query) {
         url += '?';
-        for(let key in query) {
+        for (let key in query) {
           url += `${key}=${query[key]}`;
         }
       }
       this.axios.get(url)
-        .then((res) => {
-          const data = res.data;
-          if(data.success) {
-            cb(data.data)
-          }
-        });
+          .then((res) => {
+            const data = res.data;
+            if (data.success) {
+              cb(data.data)
+            }
+          });
     },
 
     callStudent(studentId) {
@@ -89,15 +98,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-table, tr, td {
-  border: 1px solid black;
+.btn_search{
+  border-radius: 0px!important;
+}
+/* hide the blue outline */
+.form-control:focus {
+  outline: 0 !important;
+  border-color: initial;
+  box-shadow: none;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  td {
 
-  }
-}
 </style>

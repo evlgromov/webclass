@@ -1,11 +1,11 @@
 <template>
-  <div class="home">
-    <div v-if="invite" class="invite">
-      <h2>Видео урок</h2>
-      <p>{{getFullname(invite)}} приглашает вас на видео урок</p>
+  <div class="container text-center">
+    <div v-if="invite" class="invite card p-3">
+      <h1>{{$t('home.title')}}</h1>
+      <p>{{getFullname(invite)}} {{$t('home.info')}}</p>
       <div class="actions">
-        <button @click="acceptInvite">Принять</button>
-        <button @click="refuseInvite">Отказать</button>
+        <button type="button" class="btn btn-outline-success" @click="acceptInvite">{{$t('home.acceptBtn')}}</button>
+        <button type="button" class="btn btn-outline-danger" @click="refuseInvite">{{$t('home.denyBtn')}}</button>
       </div>
     </div>
     <div class="lesson">
@@ -84,6 +84,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.card{
+  margin: auto;
+  height: 100%;
+}
 .ended {
   border: red 1px solid;
 }

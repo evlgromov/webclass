@@ -1,0 +1,38 @@
+{
+  "menu": {
+    "home": "Home",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "students": "Student",
+    "exit": "Exit"
+  },
+  "home": {
+    "title": "Video lesson",
+    "info": "invites you to a video lesson",
+    "acceptBtn": "Accept",
+    "denyBtn": "Deny"
+  },
+  "auth": {
+    "signInTitle": "Sign in",
+    "signUnTitle": "Sign up",
+    "signInBtn": "Sign in",
+    "signUpBtn": "Sign up",
+    "buttonText": "Next",
+    "email": "Email",
+    "password": "Password",
+    "student": "Student",
+    "teacher": "Teacher",
+    "firstname": "Firstname",
+    "lastname": "Lastname"
+  },
+  "students": {
+    "fio": "FIO Students",
+    "actions": "Actions",
+    "сall": "Call",
+    "write": "Write a message"
+  },
+  "video": {
+    "exit": "Log out from video chat",
+    "videoInputs": "Off"
+  }
+}

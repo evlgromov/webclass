@@ -24,7 +24,9 @@ export default {
     lastname: '',
     role: 'student',
   }),
+  mounted() {
 
+  },
   computed: {
     registerData() {
       return {

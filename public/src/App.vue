@@ -1,8 +1,8 @@
 <template>
   <div id="app" v-if="appReady">
     <!-- <menu-component></menu-component> -->
-    <div id="content">
-      <Menu />
+    <div id="content" class="m-0 w-100 h-100 text-center">
+      <Menu/>
       <p v-if="isUser">{{user.email}}</p>
       <router-view />
     </div>
@@ -60,8 +60,12 @@ export default {
 }
 
 #app {
+  .btn{
+    border-radius: 20px;
+  }
   #content {
-    max-width: 1024px;
+    width: 100vw;
+    height: 100vh;
     margin: 20px auto;
     .form {
       display: flex;
@@ -71,19 +75,6 @@ export default {
       }
       h1 {
         margin-bottom: 20px;
-      }
-    }
-    .test {
-      .localVideo {
-        width: 200px;
-      }
-      .remoteVideos {
-        display: flex;
-        div {
-          video {
-            width: 200px;
-          }
-        }
       }
     }
   }
