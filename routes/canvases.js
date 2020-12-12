@@ -10,9 +10,6 @@ const router = express.Router();
 
 
 router.use(passport.authenticate('jwt', { session: false }));
-
-router.get('/:id/shapes', controller.getShapes);
-
 router.use(auth('teacher'));
 
 router.get('/', controller.getCanvases);

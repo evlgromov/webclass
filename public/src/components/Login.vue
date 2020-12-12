@@ -40,7 +40,6 @@ export default {
           .dispatch('auth/login', {
             data: this.loginData,
           }).then((res) => {
-        this.$initSocket();
         this.$router.push('/');
       });
     }

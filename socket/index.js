@@ -49,7 +49,7 @@ module.exports = (server, app) => {
      */
     require('./chat')(client, clients);
 
-    require('./canvas')(client, clients, canvases);
+    require('./canvas')(client, io, clients, canvases);
 
     client.on('disconnect', () => {
       for (let key in videocalls) {
@@ -59,13 +59,9 @@ module.exports = (server, app) => {
         }
       }
       for (let key in canvases) {
-        if (canvases[key][client.request.user._id]) {
-          delete canvases[key][client.request.user._id]
-          client.to(key).emit("canvas-remove-user");
-          if(!Object.keys(canvases[key]).length) {
-            delete canvases[key];
-          }
-          break;
+        const canvas = canvases[key];
+        if (Object.values(canvas.accessUsers).filter(({active}) => active).length === 1) {
+          delete canvases[key];
         }
       }
       delete clients[client.request.user._id];

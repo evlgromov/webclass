@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const Shape = new mongoose.Schema({
-  canvas: {
+  layer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Canvas',
+    ref: 'Layer',
     required: true
   },
   type: {

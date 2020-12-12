@@ -29,7 +29,17 @@ const Canvas = new mongoose.Schema({
       canChange: Boolean
     }]
   }
-}, { versionKey: false });
+}, { 
+  versionKey: false,
+  toJSON: { virtuals: true }
+});
+
+Canvas.virtual('layers', {
+  ref: 'Layer',
+  localField: '_id',
+  foreignField: 'canvas',
+  justOne: false,
+})
 
 Canvas.pre('remove', async function(next) {
     await Shape.deleteMany({canvas: this._id});

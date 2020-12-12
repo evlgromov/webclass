@@ -8,7 +8,17 @@
                 </select>
             </div>
         </div>
-        <p>{{ canChange ? 'Вы можете изменять холст' : 'Вы не можете изменять холст' }}</p>
+        <p>{{ (canChange && layers && layers.length) ? 'Вы можете изменять холст' : 'Вы не можете изменять холст' }}</p>
+
+        <div class="layers">
+            <p v-if="!layers || !layers.length">У вас нет ни одного слоя</p>
+            <div class="wrap">
+                <select v-model="currentLayer">
+                    <option v-for="(layer, i) of layers" :key="layer._id" :value="layer._id">{{ currentLayer === layer._id ? `*${i}*` : i }}</option>
+                </select>
+            </div>
+            <button @click="onClickAddLayer">Добавить слой</button>
+        </div>
         <div class="canvas">
             <canvas width="500" height="500"></canvas>
         </div>
@@ -31,33 +41,68 @@ export default {
         isMouseDown: false,
         tool: 'pencil',
         
+        currentLayer: false,
+        layers: {},
         shapes: [],
         newShape: [],
 
         canChange: undefined
     }),
+    computed: {
+        receivedShapes() {
+            return this.shapes.filter(({layer}) => layer == this.currentLayer);
+        },
+        currentLayerAll() {
+            return this.layers.find(({_id}) => _id == this.currentLayer);
+        }
+    },
+    watch: {
+        currentLayer: function(n, o) {
+            if (o === false) {
+                this.setActionWithCanvas();
+            }
+            this.x = 0;
+            this.y = 0;
+            this.getShapes();
+        }
+    },
     methods: {
         subscribeListeners() {
             this.sockets.subscribe("canvas-added-shape", this.onAddedShape);
-            this.sockets.subscribe("canvas-user-info", this.onUserInfo);
+            this.sockets.subscribe("canvas-added-layer", this.onAddedLayer);
+            this.sockets.subscribe("canvas-got-shapes", this.onGotShapes);
+            this.sockets.subscribe("canvas-info", this.onInfo);
         },
         unsubscribeListeners() {
             this.sockets.unsubscribe("canvas-added-shape");
-            this.sockets.unsubscribe("canvas-user-info");
+            this.sockets.unsubscribe("canvas-added-layer");
+            this.sockets.unsubscribe("canvas-got-shapes");
+            this.sockets.unsubscribe("canvas-info");
         },
         onAddedShape(shape) {
             this.shapes.push(this.shapeMapFromServer(shape));
             this.rerenderShapes();
         },
-        onUserInfo(user) {
-            console.log(user.canChange)
-            if (user) {
-                this.canChange = user.canChange;
-            } else {
-                this.$router.push({name: 'Home'});
-            }
-            this.setActionWithCanvas();
+        onAddedLayer(layer) {
+            this.layers = [...this.layers, {...layer, gotShapes: false}];
         },
+        onGotShapes(data) {
+            this.layers = this.layers.map((layer) => layer._id == data.layerId ? {...layer, gotShapes: true} : layer);
+            this.shapes = [...this.shapes, ...data.shapes.map(this.shapeMapFromServer)];
+            this.rerenderShapes();
+        },
+        onInfo(data) {
+            if (!data) {
+                this.$router.push({name: 'Home'});
+                return;
+            }
+            this.canChange = data.user.canChange;
+            this.layers = data.layers.map((layer) => ({...layer, gotShapes: false}));
+            if (this.layers.length) {
+                this.currentLayer = data.layers[0]._id;
+            }
+        },
+
         setActionWithCanvas() {
             this.canvas.addEventListener('mousedown', this.onMouseDown);
             this.canvas.addEventListener('mousemove', this.onMouseMove);
@@ -77,32 +122,31 @@ export default {
             return y - this.y;
         },
 
+        getShapes() {
+            if (!this.currentLayerAll.gotShapes) {
+                this.emitGetShapes();
+            } else {
+                this.rerenderShapes();
+            }
+        },
+
         shapeMapFromServer(shape) {
-            return this.shapesMapDecode(this.shapesMapUnrendered(shape));
-        },
-        shapesMapUnrendered(shape) {
-            return {...shape, rendered: false};
-        },
-        shapesMapRendered(shape) {
-            return {...shape, rendered: true};
+            return this.shapesMapDecode(shape);
         },
         shapesMapDecode(shape) {
             return {...shape, points: shape.points.map(this.decodeСoord)};
         },
         clearCanvas() {
             this.context.clearRect(0, 0, this.canvasW, this.canvasH);
-            this.shapes = this.shapes.map(this.shapesMapUnrendered);
         },
         renderShapes() {
-            const shapes = this.shapes.filter((shape) => shape.rendered);
-            for (const shape of this.shapes) {
+            for (const shape of this.receivedShapes) {
                 switch (shape.type) {
                     case 'pencil': 
                         this.renderPencilShape(shape);
                         break;
                 }
             }
-            this.shapes = this.shapes.map(this.shapesMapRendered)
         },
         rerenderShapes() {
             this.clearCanvas();
@@ -166,12 +210,11 @@ export default {
             switch (this.tool) {
                 case 'pencil': 
                     this.emitCreateShape({type: this.tool, points: this.newShape.map(this.encodeCoord)});
-                    this.shapes.push({type: this.tool, points: this.newShape});
+                    this.shapes.push({layer: this.currentLayer, type: this.tool, points: this.newShape});
                     break;
                 case 'pan':
                     break;
             }
-
 
             this.newShape = [];
             this.rerenderShapes();
@@ -182,24 +225,21 @@ export default {
         encodeCoord(coord) {
             return `${coord[0]}:${coord[1]}`;
         },
+        emitGetShapes() {
+            this.$socket.emit("canvas-get-shapes", {canvasId: this.canvasId, layerId: this.currentLayer});
+        },
         emitCreateShape(shape) {
-            this.$socket.emit("canvas-add-shape", {shape, canvasId: this.canvasId});
+            this.$socket.emit("canvas-add-shape", {shape, canvasId: this.canvasId, layerId: this.currentLayer});
         },
         emitSingIn() {
             this.$socket.emit("canvas-sing-in", this.canvasId);
         },
-        fetchGetShapes(cb) {
-            this.axios.get(`/api/v1/canvases/${this.canvasId}/shapes`)
-                .then((res) => {
-                    const data = res.data;
-                    if (data.success) {
-                        if(data.data.length) {
-                            this.shapes = data.data.map(this.shapeMapFromServer);
-                        }
-                    }
-                    cb(!data.success);
-                });
-        }
+        emitAddLayer() {
+            this.$socket.emit("canvas-add-layer", this.canvasId);
+        },
+        onClickAddLayer() {
+            this.emitAddLayer();
+        },
     },
     beforeRouteLeave(to, from, next) {
         this.$socket.emit('сanvas-sing-out');
@@ -212,15 +252,13 @@ export default {
     mounted() {
         this.canvas = document.querySelector('canvas');
         this.context = this.canvas.getContext('2d');
+
         const canvasData = this.canvas.getBoundingClientRect();
         this.canvasW = canvasData.width;
         this.canvasH = canvasData.height;
+
         this.emitSingIn();
         this.subscribeListeners();
-        this.fetchGetShapes((err) => {
-            if(err) this.$route.push('Home');
-            this.renderShapes();
-        });
     }
 }
 </script>

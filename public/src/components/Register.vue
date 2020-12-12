@@ -69,7 +69,6 @@ export default {
           .dispatch('auth/register', {
             data: this.registerData,
           }).then((res) => {
-        this.$initSocket();
         this.$router.push('/');
       });
     }

@@ -1,4 +1,5 @@
 const Canvas = require('../models/Canvas');
+const Layer = require('../models/Layer');
 const Shape = require('../models/Shape');
 const { ErrorResponse } = require('../utils/ErrorResponse');
 
@@ -9,11 +10,12 @@ exports.getCanvases = async (req, res, next) => {
 }
 
 exports.createCanvas = async (req, res, next) => {
-    await Canvas.create({
+    const canvas = await Canvas.create({
         owner: req.user._id,
         title: req.body.title,
         access: req.body.access
     });
+    await Layer.create({});
 
     return res.status(200).json({ success: true, data: {} });
 }
@@ -36,27 +38,25 @@ exports.deleteCanvas = async (req, res, next) => {
     return res.status(200).json({ success: true, data: {} });
 }
 
-exports.getShapes = async (req, res, next) => {
-    console.log(req.user)
-    const canvas = await Canvas.findOne({
-        _id: req.params.id,
-        $or: [{
-            access: 3
-        }, {
-            access: 1,
-            owner: req.user._id
-        }, {
-            access: 2,
-            $or: [{owner: req.user._id}, {"accessUsers._id": req.user._id}]
-        }]
-    });
-    console.log(canvas)
+// exports.getShapes = async (req, res, next) => {
+//     const canvas = await Canvas.findOne({
+//         _id: req.params.id,
+//         $or: [{
+//             access: 3
+//         }, {
+//             access: 1,
+//             owner: req.user._id
+//         }, {
+//             access: 2,
+//             $or: [{owner: req.user._id}, {"accessUsers._id": req.user._id}]
+//         }]
+//     });
 
-    if(!canvas) {
-        return next(new ErrorResponse('У вас нет прав', 401));
-    }
+//     if(!canvas) {
+//         return next(new ErrorResponse('У вас нет прав', 401));
+//     }
 
-    const shapes = await Shape.find({ canvas: req.params.id });
+//     const shapes = await Shape.find({ canvas: req.params.id });
 
-    return res.status(200).json({ success: true, data: shapes });
-}
+//     return res.status(200).json({ success: true, data: shapes });
+// }
