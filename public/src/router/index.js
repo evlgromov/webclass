@@ -5,6 +5,8 @@ import Home from '../components/Home'
 import Login from '../components/Login'
 import Register from '../components/Register'
 import Students from '../components/Students'
+import Canvases from '../components/Canvases'
+import Canvas from '../components/Canvas'
 import Video from '../components/Video'
 import Chat from '../components/Chat'
 
@@ -70,8 +72,27 @@ Vue.router = new Router({
       },
     },
     {
+      path: '/canvases',
+      name: 'Canvases',
+      component: Canvases,
+      meta: {
+        auth: {
+          roles: 'teacher'
+        },
+        redirect: {
+          name: 'Home'
+        }
+      },
+    },
+    {
+      path: '/canvases/:id',
+      name: 'Canvas',
+      component: Canvas,
+    },
+    {
       path: '/',
       component: Home,
+      name: 'Home',
       meta: {
         auth: true,
         redirect: {

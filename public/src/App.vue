@@ -17,10 +17,11 @@ import store from './store';
 
 import Menu from './components/Menu'
 
-import { initSocket } from './store/socket';
-
 export default {
   name: 'App',
+  data: () => ({
+    connect: false
+  }),
   computed: {
     user() {
       return this.$auth.user()
@@ -31,25 +32,18 @@ export default {
     authReady() {
       return this.$auth.ready();
     },
-    socketReady() {
-      return this.$store.state.socket.connect;
-    },
     appReady() {
-      return this.authReady && this.socketReady || this.authReady && !this.$auth.check();
+      return this.authReady && this.connect || this.authReady && !this.$auth.check();
     }
   },
   components: {
     Menu
   },
-  beforeMount() {
-    this.$auth
-      .load()
-      .then(() => {
-        if (this.$auth.check()) {
-          this.$initSocket();
-        }
-      });
-  }
+  sockets: {
+    connect: function () {
+      this.connect = true;
+    },
+  },
 }
 </script>
 

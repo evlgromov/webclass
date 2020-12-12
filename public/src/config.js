@@ -1,7 +1,6 @@
 import Vue from 'vue';
 
 import store from './store';
-import { setSocketConnect } from './store/socket'
 
 import auth from '@websanova/vue-auth';
 import authBearer from '@websanova/vue-auth/drivers/auth/bearer.js';
@@ -11,28 +10,10 @@ import routerVueRouter from '@websanova/vue-auth/drivers/router/vue-router.2.x.j
 import axios from 'axios';
 import VueAxios from 'vue-axios';
 
+import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-socket.io';
 
 Vue.use(VueAxios, axios);
-
-Vue.prototype.$initSocket = function () {
-  Vue.use(new VueSocketIO({
-    debug: true,
-    connection: window.location.origin,
-    vuex: {
-      store,
-      actionPrefix: 'SOCKET_',
-      mutationPrefix: 'SOCKET_'
-    },
-  }));
-
-  // this.sockets.subscribe('inited-socket', () => console.log('init'))
-  this.$socket.on('connect', () => {
-    this.$store.commit(setSocketConnect());
-    this.$socket.emit('authenticate', { token: this.$auth.token() });
-    console.log('connect')
-  })
-}
 
 Vue.use(auth, {
   auth: authBearer,
@@ -54,3 +35,13 @@ Vue.use(auth, {
     url: 'api/v1/auth/me',
   },
 })
+
+Vue.use(new VueSocketIO({
+  debug: true,
+  connection: SocketIO(window.location.origin, {query: `auth_token=${Vue.auth.token()}`}),
+  vuex: {
+    store,
+    actionPrefix: 'SOCKET_',
+    mutationPrefix: 'SOCKET_'
+  },
+}));

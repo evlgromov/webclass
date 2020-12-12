@@ -3,7 +3,7 @@ const Lesson = require('../models/Lesson');
 
 module.exports = (client, clients, videocalls) => {
   // Только для учителя
-  if (client.decoded_token.role == 'teacher') {
+  if (client.request.user.role == 'teacher') {
     /**
      * @param {string} userId - id студента, которому присылает инвайт на видеозвонок учитель.
      * @description Создаётся видеозвонок, инвайт на видеозвонок от учителя.
@@ -14,11 +14,11 @@ module.exports = (client, clients, videocalls) => {
     client.on('invite-videocall-user', async (userId) => {
       const student = clients[userId];
 
-      let lesson = await Lesson.findOne({ student: userId, teacher: client.decoded_token._id }); // TODO Нужна логика создания уроков
+      let lesson = await Lesson.findOne({ student: userId, teacher: client.request.user._id }); // TODO Нужна логика создания уроков
       if (!lesson) {
         lesson = await Lesson.create({
           student: userId,
-          teacher: client.decoded_token._id
+          teacher: client.request.user._id
         })
       }
 
@@ -26,7 +26,7 @@ module.exports = (client, clients, videocalls) => {
 
       videocalls[videocall._id.toString()] = {
         student: userId,
-        teacher: client.decoded_token._id
+        teacher: client.request.user._id
       }
 
       client.to(student.clientId).emit('invited-videocall-user', videocall._id);
@@ -41,7 +41,7 @@ module.exports = (client, clients, videocalls) => {
     client.on('end-videocall', async (videocallId) => {
       const videocall = await Videocall.findById(videocallId).populate('lesson');
 
-      if (!videocall || videocall.lesson.teacher.toString() !== client.decoded_token._id) {
+      if (!videocall || videocall.lesson.teacher.toString() !== client.request.user._id) {
         return;
       }
 
@@ -56,7 +56,7 @@ module.exports = (client, clients, videocalls) => {
     });
   }
   // Только для студента
-  if (client.decoded_token.role === 'student') {
+  if (client.request.user.role === 'student') {
     /**
      * @param {string} videocallId - id видеозвонка
      * @description Принимает заявку на видеозвонк, видеозвонк начинается (start устанавливается на Date.now())
@@ -65,7 +65,7 @@ module.exports = (client, clients, videocalls) => {
     client.on('accept-invite-videocall', async (videocallId) => {
       const videocall = await Videocall.findById(videocallId).populate('lesson');
 
-      if (!videocall || videocall.lesson.student.toString() !== client.decoded_token._id) {
+      if (!videocall || videocall.lesson.student.toString() !== client.request.user._id) {
         return;
       }
 
@@ -95,7 +95,7 @@ module.exports = (client, clients, videocalls) => {
    */
   client.on("videocall-sing-in", (videocallId) => {
     const videocall = videocalls[videocallId];
-    if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
+    if (videocall && videocall[client.request.user.role] === client.request.user._id) {
       client.join(videocallId);
       client.to(videocallId).emit("videocall-add-user");
     }
@@ -109,7 +109,7 @@ module.exports = (client, clients, videocalls) => {
    */
   client.on("videocall-sing-out", (videocallId) => {
     const videocall = videocalls[videocallId];
-    if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
+    if (videocall && videocall[client.request.user.role] === client.request.user._id) {
       client.leave(videocallId);
       client.to(videocallId).emit("videocall-remove-user");
     }
@@ -125,7 +125,7 @@ module.exports = (client, clients, videocalls) => {
    */
   client.on('videocall-new-icecandidate', (data) => {
     const videocall = videocalls[data.videocallId];
-    if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
+    if (videocall && videocall[client.request.user.role] === client.request.user._id) {
       client.to(data.videocallId).emit("videocall-add-icecandidate", data.icecandidate);
     }
   });
@@ -140,7 +140,7 @@ module.exports = (client, clients, videocalls) => {
    */
   client.on("videocall-call-user", (data) => {
     const videocall = videocalls[data.videocallId];
-    if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
+    if (videocall && videocall[client.request.user.role] === client.request.user._id) {
       client.to(data.videocallId).emit("videocall-call-made", data.offer);
     }
   });
@@ -155,7 +155,7 @@ module.exports = (client, clients, videocalls) => {
   */
   client.on("videocall-make-answer", (data) => {
     const videocall = videocalls[data.videocallId];
-    if (videocall && videocall[client.decoded_token.role] === client.decoded_token._id) {
+    if (videocall && videocall[client.request.user.role] === client.request.user._id) {
       client.to(data.videocallId).emit("videocall-answer-made", data.answer);
     }
   });

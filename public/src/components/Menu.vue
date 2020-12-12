@@ -10,7 +10,7 @@
           <router-link class="nav-link" v-if="$auth.check(['teacher'])" to="/students">{{$t('menu.students')}}</router-link>
         </li>
         <li class="nav-item active">
-          <router-link class="nav-link" v-if="$auth.check(['teacher'])" to="/students">{{$t('menu.students')}}</router-link>
+          <router-link class="nav-link" v-if="$auth.check(['teacher'])" to="/canvases">{{$t('menu.canvases')}}</router-link>
         </li>
       </ul>
       <div class="form-inline my-2 my-md-0">
