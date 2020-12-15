@@ -1,3 +1,4 @@
+(async () => {
 const express = require('express');
 const http = require('http');
 const passport = require('passport');
@@ -9,7 +10,7 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config/config.env' });
 
 const db = require('./config/db');
-db();
+await db();
 
 const errorHandler = require('./middleware/error-handler.js')
 
@@ -42,3 +43,4 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 80;
 
 server.listen(PORT);
+})();

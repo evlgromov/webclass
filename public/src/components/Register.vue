@@ -69,7 +69,7 @@ export default {
           .dispatch('auth/register', {
             data: this.registerData,
           }).then((res) => {
-        this.$router.push('/');
+        location.href=location.href;
       });
     }
   }

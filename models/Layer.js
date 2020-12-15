@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const autoIncrement = require('mongoose-auto-increment');
 
 const Layer = new mongoose.Schema({
   canvas: {
@@ -6,11 +7,8 @@ const Layer = new mongoose.Schema({
     ref: 'Canvas',
     required: true
   },
-}, {
-  versionKey: false,
-  timestamps: {
-    createdAt: 'created_at'
-  }
-});
+}, { versionKey: false });
+
+Layer.plugin(autoIncrement.plugin, 'Layer');
 
 module.exports = mongoose.model('Layer', Layer);

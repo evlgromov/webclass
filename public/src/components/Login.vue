@@ -40,8 +40,8 @@ export default {
           .dispatch('auth/login', {
             data: this.loginData,
           }).then((res) => {
-        this.$router.push('/');
-      });
+          location.href=location.href;
+        });
     }
   },
 }

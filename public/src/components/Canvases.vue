@@ -85,15 +85,15 @@ export default {
     accessUsersArray(canvasId) {
       return Object.values(this.canvases[canvasId].accessUsers);
     },
-    onCheck(canvasId, id) {
-      const canvases = {...this.canvases};
-      if (!canvases[canvasId].accessUsers[id]) {
-        canvases[canvasId].accessUsers[id] = {
+    onCheck(i, id) {
+      const canvases = [...this.canvases];
+      if (!canvases[i].accessUsers[id]) {
+        canvases[i].accessUsers[id] = {
           _id: id,
           canChange: false,
         };
       } else {
-        delete canvases[canvasId].accessUsers[id];
+        delete canvases[i].accessUsers[id];
       }
       this.canvases = canvases;
     },
@@ -122,16 +122,15 @@ export default {
     fetchUpdateCanvas(id, i) {
         const canvas = {...this.canvases[i]};
         canvas.accessUsers = this.accessUsersArray(i);
-        console.log(canvas.accessUsers)
         this.axios.put(`/api/v1/canvases/${id}`, canvas)
-            .then((res) => {
-                const data = res.data;
-                if(data.success) {
-                  console.log(this.canvases)
-                    this.canvases = this.canvases.map((canvas) => 
-                      canvas._id === id ? ({...canvas, updating: false}) : canvas);
-                }
-            });
+          .then((res) => {
+            const data = res.data;
+            if(data.success) {
+              this.canvases = this.canvases.map((canvas) => 
+                canvas._id === id ? ({...canvas, updating: false}) : canvas);
+              this.$socket.emit('canvas-reload', id)
+            }
+          });
     },
     fetchRemoveCanvas(id) {
         this.axios.delete(`/api/v1/canvases/${id}`,)
@@ -139,6 +138,7 @@ export default {
                 const data = res.data;
                 if(data.success) {
                     this.canvases = this.canvases.filter((canvas) => canvas._id !== id);
+                    this.$socket.emit('canvas-reload', id)
                 }
             });
     },

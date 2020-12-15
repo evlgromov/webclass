@@ -1,5 +1,4 @@
 const jwtAuth = require('socketio-jwt-auth');
-const { cli } = require('webpack');
 const User = require('../models/User');
 
 module.exports = (server, app) => {
