@@ -2,7 +2,11 @@ const jwtAuth = require('socketio-jwt-auth');
 const User = require('../models/User');
 
 module.exports = (server, app) => {
-  const io = require('socket.io')(server);
+  const io = require('socket.io')(server, {
+    cors: {
+      origin: '*',
+    }
+  });
   const clients = {};
   const videocalls = {};
   const canvases = {};

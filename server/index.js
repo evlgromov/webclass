@@ -2,6 +2,7 @@
 const express = require('express');
 const http = require('http');
 const passport = require('passport');
+const cors = require('cors')
 
 const cookieParser = require('cookie-parser');
 const expressSession = require('express-session');
@@ -27,6 +28,7 @@ const sessionMiddleware = expressSession({
 });
 
 app.use(express.json());
+app.use(cors());
 app.use(cookieParser());
 app.use(sessionMiddleware);
 app.use(passport.initialize());
