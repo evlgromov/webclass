@@ -1,15 +1,21 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+const webpack = require('webpack');
+
+
+const dotenv = require('dotenv').config({path: __dirname + '/.env'});
 
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-  entry: './public/src/index.js',
+  entry: './src/index.js',
   output: {
-    path: path.resolve(__dirname, 'public/dist'),
+    path: path.resolve(__dirname, './dist'),
     filename: 'index.js'
   },
+  devtool: "source-map",
   resolve: {
     extensions: ['*', '.js', '.vue'],
     alias: {
@@ -17,11 +23,8 @@ module.exports = {
     }
   },
   devServer: {
-    contentBase: path.join(__dirname, 'dist'),
-    compress: true,
     port: 9000,
-    watchContentBase: true,
-    progress: true,
+    hot: true
   },
   module: {
     rules: [
@@ -73,12 +76,30 @@ module.exports = {
       },
       {
         test: /\.js$/,
-        loader: 'babel-loader'
+        include: path.resolve(__dirname, 'src/js'),
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
       },
     ]
   },
   plugins: [
-    // new ExtractTextPlugin("style.css"),
     new VueLoaderPlugin(),
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      template: './src/index.html',
+      inject: true,
+      minify: {
+        removeComments: true,
+        collapseWhitespace: false,
+      }
+    }),
+    new webpack.DefinePlugin({
+      "process.env": JSON.stringify(dotenv.parsed)
+    }),
   ]
 }

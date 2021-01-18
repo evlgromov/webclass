@@ -66,7 +66,7 @@ export default {
   methods: {
     register() {
       this.$store
-          .dispatch('auth/register', {
+        .dispatch('auth/register', {
             data: this.registerData,
           }).then((res) => {
         location.href=location.href;

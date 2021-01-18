@@ -14,6 +14,7 @@ import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-socket.io';
 
 Vue.use(VueAxios, axios);
+Vue.axios.defaults.baseURL = process.env.BACKEND_URL
 
 Vue.use(auth, {
   auth: authBearer,
@@ -34,11 +35,14 @@ Vue.use(auth, {
   fetchData: {
     url: 'api/v1/auth/me',
   },
+  refreshData: {
+    enabled: false
+  }
 })
 
 Vue.use(new VueSocketIO({
   debug: true,
-  connection: SocketIO(window.location.origin, {query: `auth_token=${Vue.auth.token()}`}),
+  connection: SocketIO(process.env.BACKEND_URL, {query: `auth_token=${Vue.auth.token()}`}),
   vuex: {
     store,
     actionPrefix: 'SOCKET_',

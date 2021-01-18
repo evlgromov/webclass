@@ -15,9 +15,11 @@ exports.createCanvas = async (req, res, next) => {
         title: req.body.title,
         access: req.body.access
     });
-    await Layer.create({});
+    await Layer.create({
+        canvas: canvas._id
+    });
 
-    return res.status(200).json({ success: true, data: {} });
+    return res.status(200).json({ success: true, canvas });
 }
 
 exports.updateCanvas = async (req, res, next) => {

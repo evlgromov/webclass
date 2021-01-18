@@ -6,6 +6,7 @@ import App from './App';
 import router from './router';
 import store from './store';
 
+import fa from './fa-icons'
 import config from './config';
 
 sync(store, router)

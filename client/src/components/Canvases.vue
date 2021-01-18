@@ -113,7 +113,7 @@ export default {
             .then((res) => {
                 const data = res.data;
                 if(data.success) {
-                    this.canvases = [...this.canvases, canvas];
+                    this.canvases = [...this.canvases, data.canvas];
                     this.title = '';
                     this.access = 1;
                 }

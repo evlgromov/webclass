@@ -1,28 +1,5 @@
 <template>
     <div class="wrap">
-        <div class="menu">
-            <div class="tools">
-                <select v-model="tool">
-                    <option value="pencil" v-if="canChange">Карандаш</option>
-                    <option value="pan">Панорамирование</option>
-                    <option value="select" v-if="canChange">Выбрать</option>
-                    <option value="img" v-if="canChange">Загрузить изображение</option>
-                    <option value="pdf" v-if="canChange">Загрузить документ</option>
-                </select>
-                <input 
-                    id="input-img"
-                    accept="image/*"
-                    style="display:none"
-                    type="file"
-                    @change="handleChangeInputImg" />
-                <input 
-                    id="input-pdf"
-                    accept="application/pdf"
-                    style="display:none"
-                    type="file"
-                    @change="handleChangeInputPdf" />
-            </div>
-        </div>
         <p>{{ (canChange && layers && layers.length) ? 'Вы можете изменять холст' : 'Вы не можете изменять холст' }}</p>
 
         <div class="layers">
@@ -32,10 +9,71 @@
                     <option v-for="(layer, i) of layers" :key="layer._id" :value="layer._id">{{ currentLayer === layer._id ? `*${i}*` : i }}</option>
                 </select>
             </div>
-            <button @click="onClickAddLayer">Добавить слой</button>
         </div>
-        <div class="canvas">
-            <canvas width="800" height="700"></canvas>
+        <div class="workspace">
+            <div class="workspace__toolbar toolbar">
+                <div
+                    class="toolbar__item"
+                    @click="setTool('pan')"
+                >
+                    <font-awesome-icon icon="arrows-alt" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="setTool('pencil')"
+                >
+                    <font-awesome-icon icon="pencil-alt" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="setTool('select')"
+                >
+                    <font-awesome-icon icon="object-group" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="setTool('img')"
+                >
+                    <font-awesome-icon icon="image" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="setTool('pdf')"
+                >
+                    <font-awesome-icon icon="file-alt" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="onClickAddLayer"
+                >
+                    <font-awesome-icon icon="layer-group" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="toFullScreen"
+                >
+                    <font-awesome-icon icon="expand-arrows-alt" />
+                </div>
+<!--                <div-->
+<!--                    class="toolbar__item"-->
+<!--                    @click="clearCanvas"-->
+<!--                >-->
+<!--                    <font-awesome-icon icon="trash-alt" />-->
+<!--                </div>-->
+                <input
+                    id="input-img"
+                    accept="image/*"
+                    style="display:none"
+                    type="file"
+                    @change="handleChangeInputImg" />
+                <input
+                    id="input-pdf"
+                    accept="application/pdf"
+                    style="display:none"
+                    type="file"
+                    @change="handleChangeInputPdf" />
+            </div>
+            <canvas class="workspace__canvas canvas" width="800" height="450"></canvas>
         </div>
     </div>
 </template>
@@ -120,6 +158,16 @@ export default {
         }
     },
     methods: {
+        toFullScreen() {
+            if (this.canvas.webkitRequestFullScreen) {
+                this.canvas.webkitRequestFullScreen()
+            } else {
+                this.canvas.mozRequestFullScreen()
+            }
+        },
+        setTool(value) {
+            this.tool = value
+        },
         subscribeListeners() {
             this.sockets.subscribe("canvas-added-shape", this.onAddedShape);
             this.sockets.subscribe("canvas-added-layer", this.onAddedLayer);
@@ -583,7 +631,37 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-canvas {
-  border: 1px solid black;
-}
+    .canvas {
+        border: 1px solid #6e6e6e;
+        border-radius: 5px;
+        background: #fff;
+        /*width: 800px;*/
+        /*height: 700px;*/
+    }
+    .workspace {
+        display: flex;
+        justify-content: center;
+        &__toolbar {
+            margin-right: 3px;
+        }
+    }
+    .toolbar {
+        padding: 3px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #6e6e6e;
+        border-radius: 5px;
+        align-self: flex-start;
+        background: #ededed;
+        &__item {
+            padding: 5px 9px;
+            border: 1px solid #6e6e6e;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #fff;
+        }
+        &__item + &__item {
+            margin-top: 3px;
+        }
+    }
 </style>
