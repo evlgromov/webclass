@@ -43,6 +43,9 @@ app.use(router);
 
 app.use(errorHandler);
 
+app.use(express.static(__dirname + '/public/'))
+app.get(/.*/, (req, res) => res.sendFile(__dirname + '/public/index.worker.js'))
+
 const PORT = process.env.PORT || 80;
 
 server.listen(PORT);
