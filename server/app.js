@@ -1,52 +1,63 @@
 (async () => {
-const express = require('express');
-const http = require('http');
-const passport = require('passport');
-const cors = require('cors')
-const path = require('path')
+  const express = require('express');
+  const http = require('http');
+  const passport = require('passport');
+  const cors = require('cors')
+  const path = require('path')
 
-const cookieParser = require('cookie-parser');
-const expressSession = require('express-session');
+  const debug = require('debug')('Log')
+  const logger = require('morgan');
 
-const dotenv = require('dotenv');
-dotenv.config({ path: path.resolve(__dirname, './config/config.env')});
+  const cookieParser = require('cookie-parser');
+  const expressSession = require('express-session');
 
-const db = require('./config/db');
-await db();
+  const dotenv = require('dotenv');
+  dotenv.config({ path: path.resolve(__dirname, './config/config.env')});
 
-const errorHandler = require('./middleware/error-handler.js')
+  const db = require('./config/db');
+  await db();
 
-const app = express();
+  const errorHandler = require('./middleware/error-handler.js')
 
-const server = http.createServer(app);
+  const app = express();
 
-require('./socket')(server, app);
+  const server = http.createServer(app);
 
-const sessionMiddleware = expressSession({
-  secret: process.env.SECRET_SESSION_KEY,
-  resave: true,
-  saveUninitialized: true
-});
+  require('./socket')(server, app);
 
-app.use(express.json());
-app.use(cors());
-app.use(cookieParser());
-app.use(sessionMiddleware);
-app.use(passport.initialize());
-app.use(passport.session());
+  const sessionMiddleware = expressSession({
+    secret: process.env.SECRET_SESSION_KEY,
+    resave: true,
+    saveUninitialized: true
+  });
 
-require('./config/passport')(passport);
+  app.use(express.json());
+  app.use(cors());
+  app.use(cookieParser());
+  app.use(sessionMiddleware);
+  app.use(passport.initialize());
+  app.use(passport.session());
+  app.use(logger('dev'))
 
-const router = require('./routes');
+  require('./config/passport')(passport);
 
-app.use(router);
+  const router = require('./routes');
+  app.use(router);
 
-app.use(errorHandler);
+  app.use(errorHandler);
 
-app.use(express.static(__dirname + '/public/'))
-app.get(/.*/, (req, res) => res.sendFile(__dirname + '/public/index.worker.js'))
+  app.use(express.static(__dirname + '/public/'))
 
-const PORT = process.env.PORT || 80;
+  const PORT = process.env.PORT || 3000;
 
-server.listen(PORT);
+  server.listen(PORT);
+  server.on('listening', onListening);
+
+  function onListening() {
+    const addr = server.address();
+    const bind = typeof addr === 'string'
+      ? 'pipe ' + addr
+      : 'port ' + addr.port;
+    debug('Listening on ' + bind);
+  }
 })();
