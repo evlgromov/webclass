@@ -80,7 +80,7 @@
 
 <script>
 import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = process.env.BACKEND_URL
+pdfjsLib.GlobalWorkerOptions.workerSrc = process.env.BACKEND_URL + '/index.worker.js'
 
 export default {
     data: () => ({
