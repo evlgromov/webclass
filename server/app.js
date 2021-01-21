@@ -3,12 +3,13 @@ const express = require('express');
 const http = require('http');
 const passport = require('passport');
 const cors = require('cors')
+const path = require('path')
 
 const cookieParser = require('cookie-parser');
 const expressSession = require('express-session');
 
 const dotenv = require('dotenv');
-dotenv.config({ path: './config/config.env' });
+dotenv.config({ path: path.resolve(__dirname, './config/config.env')});
 
 const db = require('./config/db');
 await db();
