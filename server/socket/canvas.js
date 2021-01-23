@@ -39,7 +39,7 @@ module.exports = (client, io, clients, canvases) => {
         break;
       case 3:
         canvas.accessUsers[canvas.owner] = {canChange: true};
-        client.to(user._id).emit("canvas-reloaded", {access: true});
+        client.to(user._id).emit("canvas-reloaded", {access: true, ...canvas.accessUsers[user._id]});
         break;
     }
   })
@@ -183,7 +183,6 @@ module.exports = (client, io, clients, canvases) => {
     const userId = client.request.user._id;
     if (!canvas) {
       let dbCanvas = await Canvas.findById(canvasId).populate({path: 'layers', options: {sort: {_id: 1}}});
-      console.log(dbCanvas)
       const layers = dbCanvas.layers;
       if (!dbCanvas) return;
       dbCanvas = await dbCanvas.toObject();
