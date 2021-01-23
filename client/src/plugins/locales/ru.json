@@ -20,6 +20,7 @@
     "signUpBtn": "Зарегистрироваться",
     "email": "Электронная почта",
     "password": "Пароль",
+    "confirmPassword": "Подтвердите пароль",
     "student": "Ученик",
     "teacher": "Учитель",
     "firstname": "Имя",

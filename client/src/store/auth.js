@@ -3,10 +3,9 @@ import Vue from 'vue';
 export default {
   namespaced: true,
 
-  state() {
-    return {
-
-    };
+  state: {
+    registerErrors: {},
+    loginErrors: {}
   },
 
   actions: {
@@ -26,10 +25,12 @@ export default {
           Vue.auth.user(data.user);
           Vue.auth.remember(JSON.stringify(ctx.getters.user));
           Vue.auth.token('jwtToken', data.jwt_token.token, data.jwt_token.expires);
-          Vue.router.push({ name: 'Video' });
+          Vue.router.push({ name: 'Home' });
 
           resolve(res);
-        }, reject);
+        }).catch(e => {
+          ctx.commit('setLoginErrors', e.response.data.error.errors)
+        })
       });
     },
 
@@ -37,9 +38,11 @@ export default {
       return new Promise((resolve, reject) => {
         Vue.auth.register({
           data: data.data,
-        }).then((res) => {
-          ctx.dispatch('login', data).then(resolve, reject);
-        }, reject);
+        }).then(() => {
+          ctx.dispatch('login', data)
+        }).catch(e => {
+          ctx.commit('setRegisterErrors', e.response.data.error.errors)
+        })
       });
     },
 
@@ -47,11 +50,24 @@ export default {
       return Vue.auth.logout();
     },
   },
-
+  mutations: {
+    setLoginErrors(state, errors) {
+      state.loginErrors = errors
+    },
+    setRegisterErrors(state, errors) {
+      state.registerErrors = errors
+    }
+  },
   getters: {
     user() {
       return Vue.auth.user();
     },
+    registerErrors(state) {
+      return state.registerErrors
+    },
+    loginErrors(state) {
+      return state.loginErrors
+    }
   }
 }
 

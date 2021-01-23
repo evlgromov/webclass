@@ -1,5 +1,4 @@
 const User = require('../models/User');
-const { ErrorResponse } = require('../utils/ErrorResponse');
 
 exports.me = (req, res, next) => {
   return res.status(200).json({ success: true, data: req.user });
@@ -11,11 +10,11 @@ exports.login = async (req, res, next) => {
   const user = await User.findOne({ email }).select('+password');
 
   if (!user) {
-    return next(new ErrorResponse('Пользователя с такой почтой не существует', 400));
+    return res.status(400).json({success: false, error: {errors: {email: {msg: 'Пользователя с такой почтой не существует'}}, message: 'Bad request'}});
   }
 
   if (!await user.matchPassword(password)) {
-    return next(new ErrorResponse('Введён неверный пароль', 400));
+    return res.status(400).json({success: false, error: {errors: {password: {msg: 'Введен неправильный пароль'}}, message: 'Bad request'}});
   }
 
   sendJWTResponse(user, 200, res);

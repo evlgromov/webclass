@@ -1,13 +1,13 @@
 <template>
   <div class="home">
-    <div v-if="invite" class="invite">
-      <h2>Видео урок</h2>
-      <p>{{getFullname(invite)}} приглашает вас на видео урок</p>
-      <div class="actions">
-        <button @click="acceptInvite">Принять</button>
-        <button @click="refuseInvite">Отказать</button>
-      </div>
-    </div>
+<!--    <div v-if="invite" class="invite">-->
+<!--      <h2>Видео урок</h2>-->
+<!--      <p>{{getFullname(invite)}} приглашает вас на видео урок</p>-->
+<!--      <div class="actions">-->
+<!--        <button @click="acceptInvite">Принять</button>-->
+<!--        <button @click="refuseInvite">Отказать</button>-->
+<!--      </div>-->
+<!--    </div>-->
     <div class="lesson">
       <div class="lesson" v-for="lesson in lessons" @click="() => returnToLesson(lesson)" :key="lesson._id" :class="{ ended: !lesson.end }">
         {{getFullname(lesson[reverseRole])}}

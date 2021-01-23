@@ -602,7 +602,7 @@ export default {
         },
         onClickAddLayer() {
             this.emitAddLayer();
-        },
+        }
     },
     beforeRouteLeave(to, from, next) {
         this.$socket.emit('сanvas-sing-out');

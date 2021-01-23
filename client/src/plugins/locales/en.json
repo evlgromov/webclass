@@ -21,6 +21,7 @@
     "buttonText": "Next",
     "email": "Email",
     "password": "Password",
+    "confirmPassword": "Password confirmation",
     "student": "Student",
     "teacher": "Teacher",
     "firstname": "Firstname",

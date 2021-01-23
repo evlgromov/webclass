@@ -1,12 +1,15 @@
+
 const { checkSchema, validationResult, check } = require('express-validator');
 
 const User = require('../../models/User');
-const { ErrorResponse } = require('../../utils/ErrorResponse');
 
 module.exports.login = [
   checkSchema({
     email: {
       in: ['body'],
+      notEmpty: {
+        errorMessage: 'Почта не указана'
+      },
       exists: {
         errorMessage: 'Почта не указана'
       },
@@ -35,7 +38,7 @@ module.exports.login = [
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return next(new ErrorResponse(errors.mapped(), 400));
+      return res.status(400).json({success: false, error: {errors: errors.mapped(), message: 'Bad request'}});
     }
     next();
   }
@@ -45,6 +48,9 @@ module.exports.register = [
   checkSchema({
     email: {
       in: ['body'],
+      notEmpty: {
+        errorMessage: 'Почта не указана'
+      },
       exists: {
         errorMessage: 'Почта не указана'
       },
@@ -85,8 +91,8 @@ module.exports.register = [
         errorMessage: 'Пароль не указан'
       },
       matches: {
-        options: /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,24}$/,
-        errorMessage: 'Пароль должен содержать от 6 до 24 символов, иметь 1 цифру, 1 заглавную и 1 строчную букву'
+        options:  /^[0-9a-zA-Z!@#$%^&*]{6,}$/,
+        errorMessage: 'Пароль должен содержать от 6 символов'
       }
     },
     firstname: {
@@ -132,7 +138,7 @@ module.exports.register = [
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return next(new ErrorResponse(errors.mapped(), 400));
+      return res.status(400).json({success: false, error: {errors: errors.mapped(), message: 'Bad request'}});
     }
     next();
   }

@@ -17,11 +17,8 @@ module.exports = (client, io, clients, canvases) => {
     canvas.access = dbCanvas.access;
     switch (canvas.access) {
       case 1:
-        console.log(canvas.accessUsers)
-        console.log(Object.values(canvas.accessUsers))
         Object.values(canvas.accessUsers).forEach((user) => {
           if (user._id !== canvas.owner) {
-            console.log('EMIT')
             client.to(user._id).emit("canvas-reloaded", {access: false});
           }
         })
@@ -29,7 +26,7 @@ module.exports = (client, io, clients, canvases) => {
         canvas.accessUsers[canvas.owner] = {canChange: true};
         break;
       case 2:
-        dbCanvas.accessUsers = dbCanvas.accessUsers.reduce((acc, cur) => {acc[cur._id]={...cur, active: false};return acc}, {});
+        dbCanvas.accessUsers = dbCanvas.accessUsers.reduce(function(acc, cur) {acc[cur._id]={...cur, active: false};return acc}, {});
         dbCanvas.accessUsers[canvas.owner] = {canChange: true};
         Object.values(canvas.accessUsers).forEach((user) => {
           if (dbCanvas.accessUsers[user._id]) {
@@ -42,7 +39,7 @@ module.exports = (client, io, clients, canvases) => {
         break;
       case 3:
         canvas.accessUsers[canvas.owner] = {canChange: true};
-        client.to(user._id).emit("canvas-reloaded", {access: true, ...canvas.accessUsers[user._id]});
+        client.to(user._id).emit("canvas-reloaded", {access: true});
         break;
     }
   })
@@ -186,6 +183,7 @@ module.exports = (client, io, clients, canvases) => {
     const userId = client.request.user._id;
     if (!canvas) {
       let dbCanvas = await Canvas.findById(canvasId).populate({path: 'layers', options: {sort: {_id: 1}}});
+      console.log(dbCanvas)
       const layers = dbCanvas.layers;
       if (!dbCanvas) return;
       dbCanvas = await dbCanvas.toObject();
@@ -199,7 +197,7 @@ module.exports = (client, io, clients, canvases) => {
           }
           break;
         case 2:
-          dbCanvas.accessUsers = dbCanvas.accessUsers.reduce((acc, cur) => {acc[cur._id]={...cur, active: false};return acc}, {});
+          dbCanvas.accessUsers = dbCanvas.accessUsers.reduce(function(acc, cur) {acc[cur._id]={...cur, active: false};return acc}, {});
           if (dbCanvas.accessUsers[userId]) {
             canvases[canvasId] = dbCanvas;
           } else if (dbCanvas.owner == userId) {

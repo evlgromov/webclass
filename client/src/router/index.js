@@ -20,9 +20,6 @@ Vue.router = new Router({
       component: Login,
       meta: {
         auth: false,
-        redirect: {
-          name: 'Home'
-        }
       },
     },
     {
@@ -30,10 +27,7 @@ Vue.router = new Router({
       name: 'Register',
       component: Register,
       meta: {
-        auth: false,
-        redirect: {
-          name: 'Home'
-        }
+        auth: false
       },
     },
     {
