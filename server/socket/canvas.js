@@ -206,7 +206,7 @@ module.exports = (client, io, clients, canvases) => {
           break;
         case 3:
           canvases[canvasId] = dbCanvas;
-          canvases[canvasId].accessUsers[userId] = {canChange: dbCanvas.owner == userId};
+          canvases[canvasId].accessUsers[userId] = {canChange: true};
           break;
       }
     } else {
@@ -217,7 +217,7 @@ module.exports = (client, io, clients, canvases) => {
           }
           break;
         case 3:
-          canvas.accessUsers[userId] = {canChange: canvas.owner == userId};
+          canvas.accessUsers[userId] = {canChange: true};
           break;
       }
     }

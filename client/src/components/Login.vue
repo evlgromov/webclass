@@ -47,16 +47,15 @@ export default {
       };
     },
     errors() {
-      return this.$store.getters['auth/loginErrors']
+      return this.$store.getters['auth/getErrors']
     }
   },
 
   methods: {
     auth() {
-      this.$store
-          .dispatch('auth/login', {
-            data: this.loginData,
-          })
+      this.$store.dispatch('auth/login', {
+            data: this.loginData
+      })
     }
   },
 }

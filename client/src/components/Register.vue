@@ -97,7 +97,7 @@ export default {
       }
     },
     errors() {
-      return this.$store.getters['auth/registerErrors']
+      return this.$store.getters['auth/getErrors']
     }
   },
 
@@ -113,9 +113,8 @@ export default {
       if(this.password !== this.confirmPassword) {
         this.invalidPassword = 'Пароли не совпадают'
         return false
-      } else {
-        return true
       }
+      return true
     }
   }
 }

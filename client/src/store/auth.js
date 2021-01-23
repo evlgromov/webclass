@@ -4,8 +4,7 @@ export default {
   namespaced: true,
 
   state: {
-    registerErrors: {},
-    loginErrors: {}
+    errors: {}
   },
 
   actions: {
@@ -27,9 +26,11 @@ export default {
           Vue.auth.token('jwtToken', data.jwt_token.token, data.jwt_token.expires);
           Vue.router.push({ name: 'Home' });
 
+          ctx.commit('clearErrors')
+
           resolve(res);
         }).catch(e => {
-          ctx.commit('setLoginErrors', e.response.data.error.errors)
+          ctx.commit('setErrors', e.response.data.error.errors)
         })
       });
     },
@@ -40,8 +41,9 @@ export default {
           data: data.data,
         }).then(() => {
           ctx.dispatch('login', data)
+          ctx.commit('clearErrors')
         }).catch(e => {
-          ctx.commit('setRegisterErrors', e.response.data.error.errors)
+          ctx.commit('setErrors', e.response.data.error.errors)
         })
       });
     },
@@ -51,22 +53,21 @@ export default {
     },
   },
   mutations: {
-    setLoginErrors(state, errors) {
-      state.loginErrors = errors
+    setErrors(state, errors) {
+      state.errors = errors
     },
-    setRegisterErrors(state, errors) {
-      state.registerErrors = errors
+    clearErrors(state) {
+      for (const prop of Object.keys(state.errors)) {
+        delete state.errors[prop];
+      }
     }
   },
   getters: {
     user() {
       return Vue.auth.user();
     },
-    registerErrors(state) {
-      return state.registerErrors
-    },
-    loginErrors(state) {
-      return state.loginErrors
+    getErrors(state) {
+      return state.errors
     }
   }
 }
