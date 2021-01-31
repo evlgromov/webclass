@@ -21,11 +21,11 @@ exports.login = async (req, res, next) => {
 }
 
 exports.register = async (req, res, next) => {
-  const { email, password, firstname, lastname, role } = req.body;
+  const { email, password, firstname, lastname} = req.body;
 
   const hashPassword = await User.hashPassword(password);
 
-  const user = await User.create({ email, password: hashPassword, firstname, lastname, role });
+  const user = await User.create({ email, password: hashPassword, firstname, lastname});
 
   sendJWTResponse(user, 200, res);
 }

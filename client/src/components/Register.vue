@@ -3,63 +3,72 @@
     <div class="container-fluid mh-100 w-100 mt-4">
       <div class="card p-3">
         <h1 class="mb-3">{{$t('auth.signUnTitle')}}</h1>
-        <div class="d-flex justify-content-center">
-          <div class="p-2">
-            <div class="form-check-inline">
-              <label class="form-check-label">
-                <input type="radio" class="form-check-input" value="student" v-model="role" name="optradio">{{$t('auth.student')}}
-              </label>
-            </div>
-          </div>
-          <div class="p-2">
-            <div class="form-check-inline">
-              <label class="form-check-label">
-                <input type="radio" class="form-check-input" value="teacher" v-model="role" name="optradio">{{$t('auth.teacher')}}
-              </label>
-            </div>
-          </div>
-        </div>
         <div class="form-group mt-3 mb-4">
-          <input v-model="email" class="form-control mw-100" :placeholder="$t('auth.email')" type="text">
+          <input
+              v-model="email"
+              :placeholder="$t('auth.email')"
+              v-bind:class="{'form-control':true, 'is-invalid' : errors.email, 'mw-100':true}"
+              type="text"
+          >
           <small
               v-if="errors.email"
-              class="error"
+              class="invalid-feedback text-left"
           >
             {{errors.email.msg}}
           </small>
         </div>
         <div class="form-group mb-4">
-          <input v-model="firstname" class="form-control mw-100" :placeholder="$t('auth.firstname')" type="text">
+          <input
+              v-model="firstname"
+              :placeholder="$t('auth.firstname')"
+              v-bind:class="{'form-control':true, 'is-invalid' : errors.firstname, 'mw-100':true}"
+              type="text"
+          >
           <small
               v-if="errors.firstname"
-              class="error"
+              class="invalid-feedback text-left"
           >
             {{errors.firstname.msg}}
           </small>
         </div>
         <div class="form-group mb-4">
-          <input v-model="lastname" class="form-control mw-100" :placeholder="$t('auth.lastname')" type="text">
+          <input
+              v-model="lastname"
+              :placeholder="$t('auth.lastname')"
+              v-bind:class="{'form-control':true, 'is-invalid' : errors.lastname, 'mw-100':true}"
+              type="text"
+          >
           <small
               v-if="errors.lastname"
-              class="error"
+              class="invalid-feedback text-left"
           >
             {{errors.lastname.msg}}
           </small>
         </div>
         <div class="form-group mb-4">
-          <input v-model="password" class="form-control mw-100" :placeholder="$t('auth.password')" type="password">
+          <input
+              v-model="password"
+              :placeholder="$t('auth.password')"
+              v-bind:class="{'form-control':true, 'is-invalid' : errors.password, 'mw-100':true}"
+              type="password"
+          >
           <small
               v-if="errors.password"
-              class="error"
+              class="invalid-feedback text-left"
           >
             {{errors.password.msg}}
           </small>
         </div>
         <div class="form-group mb-4">
-          <input v-model="confirmPassword" class="form-control mw-100" :placeholder="$t('auth.confirmPassword')" type="password">
+          <input
+              v-model="confirmPassword"
+              :placeholder="$t('auth.password')"
+              v-bind:class="{'form-control':true, 'is-invalid' : errors.password, 'mw-100':true}"
+              type="password"
+          >
           <small
               v-if="checkPassword"
-              class="error"
+              class="invalid-feedback text-left"
           >
             {{invalidPassword}}
           </small>
@@ -73,6 +82,8 @@
 </template>
 
 <script>
+import Vue from 'vue';
+
 export default {
   data: () => ({
     email: '',
@@ -80,12 +91,8 @@ export default {
     confirmPassword: '',
     firstname: '',
     lastname: '',
-    role: 'student',
     invalidPassword: ''
   }),
-  mounted() {
-
-  },
   computed: {
     registerData() {
       return {
@@ -93,24 +100,31 @@ export default {
         password: this.password,
         firstname: this.firstname,
         lastname: this.lastname,
-        role: this.role,
       }
     },
     errors() {
-      return this.$store.getters['auth/getErrors']
+      return this.$store.getters['auth/getRegisterErrors']
     }
   },
 
   methods: {
     register() {
+      const vm = this;
       if(!this.checkPassword()) return
       this.$store
         .dispatch('auth/register', {
           data: this.registerData,
-        })
+        }).then((res) => {
+          const token = res.data.data.jwt_token.token
+          vm.$socket.close()
+          vm.$socket.io.opts.query = {auth_token: token};
+          vm.$socket.open()
+      })
     },
     checkPassword() {
-      if(this.password !== this.confirmPassword) {
+      if (this.confirmPassword === '') {
+        this.invalidPassword = 'Поле не может быть пустым'
+      } else if(this.password !== this.confirmPassword) {
         this.invalidPassword = 'Пароли не совпадают'
         return false
       }
@@ -125,10 +139,6 @@ export default {
   max-width: 400px;
   min-width: 300px;
   box-shadow:3px 3px 5px 0px rgba(50, 50, 50, 0.1);
-}
-.error {
-  float: left;
-  color: darkred;
 }
 @media only screen and (max-width: 768px) {
   .container-fluid{

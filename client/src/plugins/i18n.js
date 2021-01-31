@@ -5,7 +5,7 @@ import ru from "./locales/ru.json";
 
 Vue.use(VueI18n);
 
-const userLang = navigator.language || navigator.userLanguage;
+const userLang = (navigator.language || navigator.userLanguage).slice(0,2);
 
 export default new VueI18n({
     locale: (userLang)? userLang : "en",

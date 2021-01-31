@@ -13,7 +13,7 @@ router.use('/api/v1/auth', auth);
 router.use('/api/v1/students', students);
 router.use('/api/v1/users', users);
 router.use('/api/v1/canvases', canvases);
-router.use('/api/v1/lessons', lessons);
+// router.use('/api/v1/lessons', lessons);
 router.use('/api/v1/chats', chats);
 
 module.exports = router;

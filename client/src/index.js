@@ -17,10 +17,5 @@ new Vue({
   components: { App },
   router,
   store,
-  template: '<App/>',
-  sockets: {
-    success: function() {
-      console.log('connect')
-    }
-  }
+  template: '<App/>'
 });

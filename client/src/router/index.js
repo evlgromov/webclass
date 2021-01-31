@@ -57,9 +57,6 @@ Vue.router = new Router({
       name: 'Students',
       component: Students,
       meta: {
-        auth: {
-          roles: 'teacher'
-        },
         redirect: {
           name: 'Home'
         }
@@ -69,14 +66,6 @@ Vue.router = new Router({
       path: '/canvases',
       name: 'Canvases',
       component: Canvases,
-      meta: {
-        auth: {
-          roles: 'teacher'
-        },
-        redirect: {
-          name: 'Home'
-        }
-      },
     },
     {
       path: '/canvases/:id',

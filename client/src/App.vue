@@ -1,21 +1,16 @@
 <template>
   <div id="app" v-if="appReady">
     <!-- <menu-component></menu-component> -->
-    <div id="content" class="m-0 w-100 h-100 text-center">
+    <div id="content" class="text-center">
       <Menu/>
-      <p v-if="isUser">{{user.email}}</p>
       <router-view />
     </div>
   </div>
 </template>
 
 <script>
-import Vue from 'vue';
-import VueSocketIO from 'vue-socket.io';
-
-import store from './store';
-
-import Menu from './components/Menu'
+import Vue from 'vue'
+import Menu from './components/Menu';
 
 export default {
   name: 'App',
@@ -23,54 +18,51 @@ export default {
     connect: false
   }),
   computed: {
-    user() {
-      return this.$auth.user()
-    },
-    isUser() {
-      return !!this.user;
-    },
     authReady() {
       return this.$auth.ready();
     },
     appReady() {
       return this.authReady && this.connect || this.authReady && !this.$auth.check();
+    },
+  },
+  sockets: {
+    connect: function() {
+      console.log('Connected')
+      this.connect = true
+    },
+    disconnect: function() {
+      console.log('Disconnected')
     }
   },
   components: {
     Menu
-  },
-  sockets: {
-    connect: function () {
-      this.connect = true;
-    },
-  },
+  }
 }
 </script>
 
 <style lang="scss">
-* {
-  margin: 0;
-  padding: 0;
-}
-
-#app {
-  .btn{
-    border-radius: 20px;
+  * {
+    margin: 0;
+    padding: 0;
   }
-  #content {
-    width: 100vw;
-    height: 100vh;
-    margin: 20px auto;
-    .form {
-      display: flex;
-      flex-direction: column;
-      input, button {
-        max-width: 200px;
-      }
-      h1 {
-        margin-bottom: 20px;
+  #app {
+    #content {
+      width: 100vw;
+      height: 100vh;
+      margin: 0 auto;
+      .form {
+        display: flex;
+        flex-direction: column;
+        input, button {
+          max-width: 200px;
+        }
+        h1 {
+          margin-bottom: 20px;
+        }
       }
     }
   }
-}
+  .container {
+    min-width: 1280px;
+  }
 </style>

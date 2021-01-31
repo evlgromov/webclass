@@ -8,7 +8,7 @@ module.exports = (server, app) => {
     }
   });
   const clients = {};
-  const videocalls = {};
+  // const videocalls = {};
   const canvases = {};
   io.use(jwtAuth.authenticate({
     secret: process.env.JWT_SECRET,
@@ -19,7 +19,7 @@ module.exports = (server, app) => {
       try {
         const user = await (await User.findById(payload._id)).toObject();
         if(!user) return done(null, false, 'user does not exist');
-        
+
         user._id = user._id.toString();
         done(null, user);
       } catch (error) {
@@ -35,7 +35,6 @@ module.exports = (server, app) => {
     }
     clients[client.request.user._id] = {
       clientId: client.id,
-      role: client.request.user.role,
     };
 
     /**
@@ -44,7 +43,7 @@ module.exports = (server, app) => {
      * принятие этого предложение студентом.
      * Прослушки, логика, связанная с webrtc и Videocall моделью.
      */
-    require('./lesson')(client, clients, videocalls);
+    // require('./lesson')(client, clients, videocalls);
 
     /**
      * Чаты
@@ -55,17 +54,14 @@ module.exports = (server, app) => {
     require('./canvas')(client, io, clients, canvases);
 
     client.on('disconnect', () => {
-      for (let key in videocalls) {
-        if (videocalls[key][client.request.user.role] === client.request.user._id) {
-          client.to(key).emit("videocall-remove-user");
-          break;
-        }
-      }
+      // for (let key in videocalls) {
+      //   if (videocalls[key][client.request.user.role] === client.request.user._id) {
+      //     client.to(key).emit("videocall-remove-user");
+      //     break;
+      //   }
+      // }
       for (let key in canvases) {
-        const canvas = canvases[key];
-        if (Object.values(canvas.accessUsers).filter(({active}) => active).length === 1) {
-          delete canvases[key];
-        }
+        delete canvases[key];
       }
       delete clients[client.request.user._id];
     })

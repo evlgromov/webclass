@@ -5,7 +5,7 @@
     "signUp": "Sign up",
     "students": "Student",
     "exit": "Exit",
-    "canvases": "Virtual canvases"
+    "canvases": "Virtual whiteboards"
   },
   "home": {
     "title": "Video lesson",
@@ -36,5 +36,27 @@
   "video": {
     "exit": "Log out from video chat",
     "videoInputs": "Off"
+  },
+  "canvases": {
+    "title": "Title",
+    "access": "Access",
+    "addEmail": "Add email",
+    "actions": "Actions",
+    "create": "Create",
+    "closedToAll": "No invited users",
+    "openByInvitation": "Open by invitation",
+    "openToEveryone": "Open to everyone",
+    "accessForGuests": "Access for guests",
+    "closedForGuests": "Access is closed",
+    "guestsCanView": "Can view",
+    "guestsCanEdit": "Can edit",
+    "canView": "Can view",
+    "canEdit": "Can edit",
+    "settings": "Settings",
+    "open": "Open",
+    "delete": "Delete",
+    "save": "Save",
+    "add": "Add",
+    "cancel": "Cancel"
   }
 }

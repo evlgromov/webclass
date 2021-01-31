@@ -3,19 +3,29 @@
     <div class="card w-50  p-3">
       <h1 class="mb-3">{{ $t('auth.signInTitle') }}</h1>
       <div class="form-group mt-3 mb-4">
-        <input v-model="email" :placeholder="$t('auth.email')" class="form-control mw-100" type="text">
+        <input
+            v-model="email"
+            :placeholder="$t('auth.email')"
+            v-bind:class="{'form-control':true, 'is-invalid' : errors.email}"
+            type="text"
+        >
         <small
             v-if="errors.email"
-            class="error"
+            class="invalid-feedback text-left"
         >
           {{errors.email.msg}}
         </small>
       </div>
       <div class="form-group mb-4">
-        <input v-model="password" :placeholder="$t('auth.password')" class="form-control mw-100" type="password">
+        <input
+            v-model="password"
+            :placeholder="$t('auth.password')"
+            v-bind:class="{'form-control':true, 'is-invalid' : errors.password}"
+            type="password"
+        >
         <small
             v-if="errors.password"
-            class="error"
+            class="invalid-feedback text-left"
         >
           {{errors.password.msg}}
         </small>
@@ -47,24 +57,25 @@ export default {
       };
     },
     errors() {
-      return this.$store.getters['auth/getErrors']
+      return this.$store.getters['auth/getLoginErrors']
     }
   },
 
   methods: {
     auth() {
+      const vm = this;
       this.$store.dispatch('auth/login', {
             data: this.loginData
+      }).then(() => {
+        vm.$socket.close()
+        vm.$socket.io.opts.query = {auth_token: Vue.auth.token()};
+        vm.$socket.open()
       })
     }
   },
 }
 </script>
 <style scoped>
-.error {
-  float: left;
-  color: darkred;
-}
 .card {
   margin: 100px auto auto;
   max-width: 400px;

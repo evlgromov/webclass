@@ -10,7 +10,7 @@
 <!--    </div>-->
     <div class="lesson">
       <div class="lesson" v-for="lesson in lessons" @click="() => returnToLesson(lesson)" :key="lesson._id" :class="{ ended: !lesson.end }">
-        {{getFullname(lesson[reverseRole])}}
+        {{getFullname(this.$auth.user())}}
       </div>
     </div>
     <div class="chats">
@@ -25,14 +25,6 @@ export default {
     invite: false,
     lessons: []
   }),
-  computed: {
-    role() {
-      return this.$auth.user().role;
-    },
-    reverseRole() {
-      return this.role === 'student' ? 'teacher' : 'student';
-    }
-  },
   methods: {
     initListeners() {
       this.sockets.subscribe('invited-call-user', this.onInvitedCallUser);
@@ -68,17 +60,6 @@ export default {
       this.$socket.emit('refuse-invite-call-user', this.invite.socketId);
       this.invite = false;
     },
-  },
-
-  beforeMount() {
-    this.axios.get('/api/v1/lessons')
-      .then((res) => {
-        const data = res.data;
-        if(data.success) {
-          this.lessons = data.data
-        }
-      });
-    this.initListeners();
   }
 }
 </script>

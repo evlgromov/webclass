@@ -35,5 +35,27 @@
   "video": {
     "exit": "Завершить видео урок",
     "videoInputs": "Выключить"
+  },
+  "canvases": {
+    "title": "Название",
+    "addEmail": "Введите электронную почту",
+    "access": "Доступ",
+    "actions": "Действия",
+    "create": "Создать",
+    "closedToAll": "Нет приглашенных пользователей",
+    "openByInvitation": "Открытая по приглашению",
+    "openToEveryone": "Открытая для всех",
+    "accessForGuests": "Доступ для гостей",
+    "closedForGuests": "Доступ закрыт",
+    "guestsCanView": "Могут просматривать",
+    "guestsCanEdit": "Могут редактировать",
+    "canView": "Может просматривать",
+    "canEdit": "Может редактировать",
+    "settings": "Настройки",
+    "open": "Открыть",
+    "delete": "Удалить",
+    "save": "Сохранить",
+    "add": "Добавить",
+    "cancel": "Отменить"
   }
 }

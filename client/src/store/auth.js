@@ -4,7 +4,9 @@ export default {
   namespaced: true,
 
   state: {
-    errors: {}
+    errors: {},
+    loginErrors: {},
+    registerErrors: {}
   },
 
   actions: {
@@ -24,13 +26,12 @@ export default {
           Vue.auth.user(data.user);
           Vue.auth.remember(JSON.stringify(ctx.getters.user));
           Vue.auth.token('jwtToken', data.jwt_token.token, data.jwt_token.expires);
-          Vue.router.push({ name: 'Home' });
 
-          ctx.commit('clearErrors')
+          ctx.commit('clearLoginErrors')
 
           resolve(res);
         }).catch(e => {
-          ctx.commit('setErrors', e.response.data.error.errors)
+          ctx.commit('setLoginErrors', e.response.data.error.errors)
         })
       });
     },
@@ -39,11 +40,12 @@ export default {
       return new Promise((resolve, reject) => {
         Vue.auth.register({
           data: data.data,
-        }).then(() => {
+        }).then((res) => {
+          ctx.commit('clearRegisterErrors')
           ctx.dispatch('login', data)
-          ctx.commit('clearErrors')
+          resolve(res)
         }).catch(e => {
-          ctx.commit('setErrors', e.response.data.error.errors)
+          ctx.commit('setRegisterErrors', e.response.data.error.errors)
         })
       });
     },
@@ -53,12 +55,20 @@ export default {
     },
   },
   mutations: {
-    setErrors(state, errors) {
-      state.errors = errors
+    setLoginErrors(state, errors) {
+      state.loginErrors = errors
     },
-    clearErrors(state) {
-      for (const prop of Object.keys(state.errors)) {
-        delete state.errors[prop];
+    setRegisterErrors(state, errors) {
+      state.registerErrors = errors
+    },
+    clearLoginErrors(state, errors) {
+      for (const prop of Object.keys(state.loginErrors)) {
+        delete state.loginErrors[prop];
+      }
+    },
+    clearRegisterErrors(state, errors) {
+      for (const prop of Object.keys(state.registerErrors)) {
+        delete state.registerErrors[prop];
       }
     }
   },
@@ -66,8 +76,11 @@ export default {
     user() {
       return Vue.auth.user();
     },
-    getErrors(state) {
-      return state.errors
+    getLoginErrors(state) {
+      return state.loginErrors
+    },
+    getRegisterErrors(state) {
+      return state.registerErrors
     }
   }
 }

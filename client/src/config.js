@@ -13,18 +13,24 @@ import VueAxios from 'vue-axios';
 import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-socket.io';
 
+import {BootstrapVue} from "bootstrap-vue";
+import "bootstrap/dist/css/bootstrap.min.css"
+import "bootstrap-vue/dist/bootstrap-vue.css"
+
 Vue.use(VueAxios, axios);
 Vue.axios.defaults.baseURL = process.env.BACKEND_URL
+
+Vue.use(BootstrapVue)
 
 Vue.use(auth, {
   auth: authBearer,
   http: httpAxios,
   router: routerVueRouter,
   tokenDefaultKey: 'jwtToken',
-  rolesKey: 'role',
   stores: ['storage', 'cookie'],
   loginData: {
     url: 'api/v1/auth/login',
+    redirect: {name: 'Canvases'},
   },
   registerData: {
     url: 'api/v1/auth/register',

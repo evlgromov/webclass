@@ -24,12 +24,6 @@ const User = new mongoose.Schema({
     minlength: 2,
     max: 36
   },
-  role: {
-    type: String,
-    emun: ['student', 'teacher', 'admin'],
-    default: 'student',
-    required: [true, 'Пожалуйста укажите роль'],
-  },
   password: {
     type: String,
     required: [true, 'Пожалуйста укажите пароль'],
@@ -47,7 +41,7 @@ User.statics.hashPassword = async function (password) {
 }
 
 User.methods.getSignedJWT = function () {
-  return jwt.sign({ _id: this._id, role: this.role }, process.env.JWT_SECRET, {
+  return jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE,
   });
 }

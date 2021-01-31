@@ -126,13 +126,6 @@ module.exports.register = [
         },
         errorMessage: 'Фамилия должна содержать от 2 до 36 символов'
       }
-    },
-    role: {
-      in: ['body'],
-      matches: {
-        options: [/^(student|teacher)$/],
-        errorMessage: "Неправильная роль"
-      }
     }
   }),
   (req, res, next) => {

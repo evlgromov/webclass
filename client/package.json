@@ -16,6 +16,7 @@
     "@fortawesome/vue-fontawesome": "^2.0.2",
     "@websanova/vue-auth": "^3.3.8",
     "axios": "^0.21.0",
+    "bootstrap-vue": "^2.21.2",
     "dotenv": "^8.2.0",
     "pdfjs-dist": "^2.5.207",
     "sass": "^1.29.0",
