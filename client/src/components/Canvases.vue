@@ -135,6 +135,11 @@ export default {
     valid : false,
     access: 1,
   }),
+  computed: {
+    currentUser() {
+      return this.$auth.user()
+    },
+  },
   methods: {
     fetchCanvases() {
       this.axios.get('/api/v1/canvases')
@@ -198,6 +203,13 @@ export default {
     addToAccessUsersArray(canvas, email) {
       this.validate();
       if(!this.valid) return
+
+      if (this.currentUser.email == email) {
+        this.makeToast(false, 'У Вас уже есть доступ к доске')
+        this.email = ''
+        this.emailBlured = false
+        return
+      }
 
       this.users.forEach((user) => {
         if(Object.values(user).includes(email)) {

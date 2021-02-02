@@ -16,7 +16,7 @@
         <button class="btn btn-outline-primary"  v-if="$auth.check()" @click="() => $store.dispatch('auth/logout')">{{$t('menu.exit')}}</button>
         <div class="locale-switcher ml-3">
           <div class="locale-switcher_icon">🌐</div>
-          <select class="locale-switcher_select" v-model="$i18n.locale">
+          <select class="locale-switcher_select" v-model="locale">
             <option value="en">En</option>
             <option value="ru">Ru</option>
           </select>
@@ -29,6 +29,19 @@
 
 <script>
 export default {
+  data:() => ({
+    locale: 'ru'
+  }),
+  watch: {
+    locale: function (n, o) {
+      this.locale = n
+      this.$i18n.locale = n
+      localStorage.setItem('locale', n)
+    }
+  },
+  mounted() {
+    this.locale = localStorage.getItem('locale') || 'ru'
+  },
   computed: {
     user() {
       return this.$auth.user()
@@ -36,6 +49,9 @@ export default {
     isUser() {
       return !!this.user;
     },
+  },
+  methods: {
+
   }
 }
 </script>

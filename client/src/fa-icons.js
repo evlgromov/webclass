@@ -1,9 +1,9 @@
 import Vue from 'vue';
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faPencilAlt, faArrowsAlt, faObjectGroup, faImage, faFileAlt, faLayerGroup, faExpandArrowsAlt, faTrashAlt } from '@fortawesome/free-solid-svg-icons'
+import { faPencilAlt, faArrowsAlt, faObjectGroup, faImage, faFileAlt, faMinusSquare, faPlusSquare, faExpandArrowsAlt, faTrashAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-library.add(faPencilAlt, faArrowsAlt, faObjectGroup, faImage, faFileAlt, faLayerGroup, faExpandArrowsAlt, faTrashAlt)
+library.add(faPencilAlt, faArrowsAlt, faObjectGroup, faImage, faFileAlt, faMinusSquare, faPlusSquare, faExpandArrowsAlt, faTrashAlt)
 
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)

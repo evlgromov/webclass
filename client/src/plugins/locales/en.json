@@ -57,6 +57,9 @@
     "delete": "Delete",
     "save": "Save",
     "add": "Add",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "canChange": "You can edit the whiteboard",
+    "canTChange": "You can't edit the whiteboard",
+    "emptyLayers": "You don't have any layer"
   }
 }

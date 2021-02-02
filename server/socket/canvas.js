@@ -144,6 +144,18 @@ module.exports = (client, io, clients, canvases) => {
     }
   })
 
+  client.on('canvas-delete-layer', async (payload) => {
+    const canvas = canvases[payload.canvasId];
+    await Layer.deleteOne({
+      _id: payload.layerId
+    });
+    const layers = canvas.layers.filter(layer => layer._id !== payload.layerId)
+    io.to(payload.canvasId).emit("canvas-deleted-layer", {
+      canvas: payload.canvasId,
+      layerId: payload.layerId,
+    });
+  })
+
   /**
    * @param {string} canvasId - id холста
    * @description Юзер зашёл на холст.

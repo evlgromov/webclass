@@ -49,7 +49,7 @@ export default {
     #content {
       width: 100vw;
       height: 100vh;
-      margin: 0 auto;
+      margin: 0 auto 50px;
       .form {
         display: flex;
         flex-direction: column;
@@ -61,8 +61,5 @@ export default {
         }
       }
     }
-  }
-  .container {
-    min-width: 1280px;
   }
 </style>

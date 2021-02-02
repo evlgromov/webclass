@@ -1,10 +1,12 @@
 <template>
-    <div class="wrap">
-        <p>{{ (canChange && layers && layers.length) ? 'Вы можете изменять холст' : 'Вы не можете изменять холст' }}</p>
+    <div
+        class="wrap"
+    >
+        <p class="mt-3">{{ (canChange && layers && layers.length) ? $t('canvases.canChange') : $t('canvases.canTChange') }}</p>
         <div class="layers">
-            <p v-if="!layers || !layers.length">У вас нет ни одного слоя</p>
+            <p v-if="!layers || !layers.length">{{$t('canvases.emptyLayers')}}</p>
             <div class="wrap">
-                <select v-if="currentLayer" v-model="currentLayer">
+                <select v-if="layers.length" v-model="currentLayer">
                     <option v-for="(layer, i) of layers" :key="layer._id" :value="layer._id">{{ currentLayer === layer._id ? `*${i}*` : i }}</option>
                 </select>
             </div>
@@ -12,6 +14,8 @@
         <div class="workspace mt-3">
             <div
                 class="workspace__toolbar toolbar"
+                v-if="canChange"
+                ref="toolbar"
             >
                 <div
                     class="toolbar__item"
@@ -24,6 +28,18 @@
                     @click="setTool('pencil')"
                 >
                     <font-awesome-icon icon="pencil-alt" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="onClickAddLayer"
+                >
+                    <font-awesome-icon icon="plus-square" />
+                </div>
+                <div
+                    class="toolbar__item"
+                    @click="onClickDeleteLayer"
+                >
+                    <font-awesome-icon icon="minus-square" />
                 </div>
                 <div
                     class="toolbar__item"
@@ -45,30 +61,27 @@
                 </div>
                 <div
                     class="toolbar__item"
-                    @click="onClickAddLayer"
-                >
-                    <font-awesome-icon icon="layer-group" />
-                </div>
-                <div
-                    class="toolbar__item"
                     @click="toFullScreen"
                 >
                     <font-awesome-icon icon="expand-arrows-alt" />
                 </div>
                 <input
-                    id="input-img"
+                    ref="inputImg"
                     accept="image/*"
                     style="display:none"
                     type="file"
                     @change="handleChangeInputImg" />
                 <input
-                    id="input-pdf"
+                    ref="inputPdf"
                     accept="application/pdf"
                     style="display:none"
                     type="file"
                     @change="handleChangeInputPdf" />
             </div>
-            <canvas class="workspace__canvas canvas" width="800" height="450"></canvas>
+            <canvas
+                ref="canvas"
+                class="workspace__canvas canvas" width="800" height="450"
+            ></canvas>
         </div>
     </div>
 </template>
@@ -110,7 +123,8 @@
 
             canChange: undefined,
 
-            access: false
+            access: false,
+            fullScreenState: ''
         }),
         computed: {
             currentShapes() {
@@ -145,14 +159,14 @@
             },
             tool: function(n, o) {
                 if (n === 'img') {
-                    this.inputImg.click();
+                    this.$refs.inputImg.click();
                     this.tool = o;
                 }
                 if (n === 'pdf') {
-                    this.inputPdf.click();
+                    this.$refs.inputPdf.click();
                     this.tool = o;
                 }
-            }
+            },
         },
         methods: {
             toFullScreen() {
@@ -161,14 +175,30 @@
                 } else {
                     this.canvas.mozRequestFullScreen()
                 }
+                this.canvas.width = window.screen.width
+                this.canvas.height = window.screen.height
+                const canvasData = this.canvas.getBoundingClientRect();
+                this.canvasW = canvasData.width;
+                this.canvasH = canvasData.height;
+                this.rerender()
+            },
+            closeFullScreenMode(e) {
+                if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
+                    this.canvas.width = 800
+                    this.canvas.height = 450
+                    const canvasData = this.canvas.getBoundingClientRect();
+                    this.canvasW = canvasData.width;
+                    this.canvasH = canvasData.height;
+                    this.rerender()
+                }
             },
             setTool(value) {
                 this.tool = value
             },
             subscribeListeners() {
-                this.sockets.subscribe("canvas-add-user", () => {});
                 this.sockets.subscribe("canvas-added-shape", this.onAddedShape);
                 this.sockets.subscribe("canvas-added-layer", this.onAddedLayer);
+                this.sockets.subscribe("canvas-deleted-layer", this.onDeletedLayer);
                 this.sockets.subscribe("canvas-added-shapes", this.onAddedShapes);
                 this.sockets.subscribe("canvas-added-layers", this.onAddedLayers);
                 this.sockets.subscribe("canvas-got-shapes", this.onGotShapes);
@@ -194,6 +224,15 @@
             },
             onAddedLayer(layer) {
                 this.layers = [...this.layers, {...layer, gotShapes: false}];
+                this.currentLayer = this.layers[this.layers.length - 1]._id
+            },
+            onDeletedLayer(payload) {
+                this.layers = this.layers.filter(layer => layer._id !== payload.layerId)
+                if (this.layers.length === 0) {
+                    this.clearCanvas()
+                    return
+                }
+                this.currentLayer = this.layers[this.layers.length - 1]._id
             },
             async onAddedShapes(shapes) {
                 this.shapes = [...this.shapes, ...(await this.shapesMapFromServer(shapes))];
@@ -248,7 +287,7 @@
                 // if(file && file.size / (1024 ** 2) < 3) {
                 const reader = new FileReader(file);
                 reader.onload = (e) => {
-                    this.inputImg.value = '';
+                    this.$refs.inputImg.value = '';
                     if(!/safari/i.test(navigator.userAgent)){
                         this.inputImg.type = '';
                         this.inputImg.type = 'file';
@@ -283,7 +322,7 @@
                 const x = this.serverX(0);
                 const y = this.serverY(0);
                 fileReader.onload = (e) => {
-                    this.inputPdf.value = '';
+                    this.$refs.inputPdf.value = '';
                     if(!/safari/i.test(navigator.userAgent)){
                         this.inputPdf.type = '';
                         this.inputPdf.type = 'file';
@@ -599,23 +638,29 @@
             emitAddLayer() {
                 this.$socket.emit("canvas-add-layer", this.canvasId);
             },
+            emitDeleteLayer() {
+                this.$socket.emit("canvas-delete-layer", {
+                    canvasId: this.canvasId,
+                    layerId: this.currentLayer
+                });
+            },
             onClickAddLayer() {
                 this.emitAddLayer();
+            },
+            onClickDeleteLayer() {
+                this.emitDeleteLayer();
             }
-        },
-        beforeRouteLeave(to, from, next) {
-            this.$socket.emit('сanvas-sing-out');
-            this.unsubscribeListeners();
-            next();
         },
         beforeMount() {
             this.canvasId = this.$route.params.id;
         },
         mounted() {
-            this.canvas = document.querySelector('canvas');
-            this.inputImg = document.querySelector('#input-img');
-            this.inputPdf = document.querySelector('#input-pdf');
+            this.$refs.canvas.addEventListener('fullscreenchange', this.closeFullScreenMode);
+            this.$refs.canvas.addEventListener('webkitfullscreenchange', this.closeFullScreenMode);
+            this.$refs.canvas.addEventListener('mozfullscreenchange', this.closeFullScreenMode);
+            this.$refs.canvas.addEventListener('MSFullscreenChange', this.closeFullScreenMode);
 
+            this.canvas = document.querySelector('canvas');
             this.context = this.canvas.getContext('2d');
 
             const canvasData = this.canvas.getBoundingClientRect();
@@ -625,11 +670,11 @@
             this.emitSingIn();
             this.subscribeListeners();
         },
-        beforeUpdate() {
-            if(!this.canChange) {
-                document.querySelector('.toolbar').setAttribute('style', 'display:none')
-            }
-        }
+        beforeRouteLeave(to, from, next) {
+            this.$socket.emit('сanvas-sing-out');
+            this.unsubscribeListeners();
+            next();
+        },
     }
 </script>
 
