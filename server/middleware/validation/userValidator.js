@@ -126,6 +126,21 @@ module.exports.register = [
         },
         errorMessage: 'Фамилия должна содержать от 2 до 36 символов'
       }
+    },
+    confirmPassword: {
+      in: ['body'],
+      matches: {
+        options:  /^[0-9a-zA-Z!@#$%^&*]{6,}$/,
+        errorMessage: 'Пароль должен содержать от 6 символов'
+      },
+      custom: {
+        options: (value, {req}) => {
+          if (value !== req.body.password) {
+            throw new Error('Введенные пароли не совпадают');
+          }
+          return true
+        }
+      }
     }
   }),
   (req, res, next) => {

@@ -37,11 +37,11 @@ export default {
     },
 
     register(ctx, data) {
+      ctx.commit('clearRegisterErrors')
       return new Promise((resolve, reject) => {
         Vue.auth.register({
           data: data.data,
         }).then((res) => {
-          ctx.commit('clearRegisterErrors')
           ctx.dispatch('login', data)
           resolve(res)
         }).catch(e => {
@@ -56,7 +56,6 @@ export default {
   },
   mutations: {
     setLoginErrors(state, errors) {
-      state.loginErrors = errors
     },
     setRegisterErrors(state, errors) {
       state.registerErrors = errors

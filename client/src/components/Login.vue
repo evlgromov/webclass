@@ -1,13 +1,13 @@
 <template>
   <div class="container-fluid text-center mh-100 w-100 mt-4">
-    <div class="card w-50  p-3">
+    <form class="card w-50 p-3" @submit.prevent="auth">
       <h1 class="mb-3">{{ $t('auth.signInTitle') }}</h1>
       <div class="form-group mt-3 mb-4">
         <input
             v-model="email"
             :placeholder="$t('auth.email')"
             v-bind:class="{'form-control':true, 'is-invalid' : errors.email}"
-            type="text"
+            type="email"
         >
         <small
             v-if="errors.email"
@@ -22,6 +22,7 @@
             :placeholder="$t('auth.password')"
             v-bind:class="{'form-control':true, 'is-invalid' : errors.password}"
             type="password"
+            ref="password"
         >
         <small
             v-if="errors.password"
@@ -31,11 +32,14 @@
         </small>
       </div>
       <div class="form-group">
-        <button class="btn btn-outline-primary mw-75 w-75 m-auto" type="button" @click="auth">
+        <button
+            class="btn btn-outline-primary mw-75 w-75 m-auto"
+            type="submit"
+        >
           {{ $t('auth.signInBtn') }}
         </button>
       </div>
-    </div>
+    </form>
   </div>
 </template>
 
@@ -62,7 +66,7 @@ export default {
   },
 
   methods: {
-    auth() {
+    auth(e) {
       const vm = this;
       this.$store.dispatch('auth/login', {
             data: this.loginData
@@ -73,6 +77,7 @@ export default {
       })
     }
   },
+
 }
 </script>
 <style scoped>

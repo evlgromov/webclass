@@ -1,9 +1,14 @@
 <template>
   <div class="container">
     <form class="create mt-3">
-      <input class="form-control" v-model="title" type="text" :placeholder="$t('canvases.title')">
+      <div class="create__title">
+        {{$t('canvases.createWhiteboard')}}
+      </div>
+      <input class="create__input form-control" v-model="title" type="text" :placeholder="$t('canvases.title')">
       <button class="create__btn btn btn-primary" @click="fetchCreateCanvas">{{ $t('canvases.create') }}</button>
     </form>
+    <hr>
+    <h5>{{$t('canvases.yourWhiteboards')}}</h5>
     <table class="table table-bordered mt-3" v-if="canvases.length">
       <thead class="thead-light">
       <tr class="d-flex">
@@ -45,8 +50,7 @@
               </select>
             </div>
           </div>
-
-          <div v-if="canvas.updating">
+          <div v-else>
             <div class="add-email">
               <input
                   v-model="email"
@@ -86,7 +90,6 @@
 
             <small v-if="!validEmail(email) && emailBlured" class="error">Введите правильную почту</small>
 
-
             <hr>
 
             <div class="for-guests">
@@ -104,16 +107,29 @@
           <button type="button" class="btn btn-outline-secondary" @click="() => fetchUpdateCanvas(canvas._id, i)">{{ $t('canvases.save') }}</button>
           <button type="button" class="btn btn-outline-secondary" @click="cancelChanges(canvas)">{{ $t('canvases.cancel') }}</button>
         </td>
-        <td class="col-4" v-else>
-          <button type="button" class="btn btn-outline-secondary" @click="() => $router.push({name: 'Canvas', params: {id: canvas._id}})">{{ $t('canvases.open') }}</button>
+        <td class="table__actions col-4" v-else>
+          <button type="button" class="table__action btn btn-outline-secondary" @click="() => $router.push({name: 'Canvas', params: {id: canvas._id}})">{{ $t('canvases.open') }}</button>
           <button
               type="button"
-              class="btn btn-outline-secondary"
+              class="btn btn-outline-secondary table__action"
               @click="toSettings(canvas)"
           >
             {{ $t('canvases.settings') }}
           </button>
-          <button type="button" class="btn btn-outline-secondary" @click="() => fetchRemoveCanvas(canvas._id)">{{ $t('canvases.delete') }}</button>
+          <button
+              type="button"
+              class="btn btn-outline-secondary table__action"
+              @click="() => fetchRemoveCanvas(canvas._id)"
+          >
+            {{ $t('canvases.delete') }}
+          </button>
+          <button
+              class="icon icon_view_table table__action"
+              v-clipboard="() => currentRoute + '/' + canvas._id"
+              v-b-tooltip.focus.bottom="$t('canvases.copied')"
+          >
+            <font-awesome-icon icon="copy"></font-awesome-icon>
+          </button>
         </td>
       </tr>
       </tbody>
@@ -134,11 +150,15 @@ export default {
     emailBlured : false,
     valid : false,
     access: 1,
+    clipboardStatus: undefined
   }),
   computed: {
     currentUser() {
       return this.$auth.user()
     },
+    currentRoute () {
+      return window.location.href
+    }
   },
   methods: {
     fetchCanvases() {
@@ -188,7 +208,7 @@ export default {
           }
         });
     },
-    toSettings(canvas) {
+        toSettings(canvas) {
       canvas.updating = true
     },
     cancelChanges(canvas) {
@@ -272,8 +292,14 @@ export default {
 <style lang="scss" scoped>
   .create {
     display: flex;
-    max-width: 50%;
+    align-items: center;
     margin: 0 auto;
+    &__title {
+      margin-right: 13px;
+    }
+    &__input {
+      max-width: 50%;
+    }
     &__btn {
       margin-left: 10px;
     }
@@ -305,6 +331,28 @@ export default {
     }
     &__btn {
 
+    }
+  }
+  .table {
+    &__actions {
+      display: flex;
+      align-items: center;
+    }
+    &__action + &__action {
+      margin-left: 5px;
+    }
+  }
+  .icon {
+    border-radius: 5px;
+    border: 1px solid #6c757d;
+    &:hover {
+      background: #6c757d;
+    }
+    &:active {
+      background: #fff;
+    }
+    &_view_table {
+      padding: 6px 12px;
     }
   }
   .error {

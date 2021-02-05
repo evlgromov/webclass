@@ -1,14 +1,14 @@
 <template>
   <div class="form">
     <div class="container-fluid mh-100 w-100 mt-4">
-      <div class="card p-3">
+      <form class="card p-3" @submit.prevent="register">
         <h1 class="mb-3">{{$t('auth.signUnTitle')}}</h1>
         <div class="form-group mt-3 mb-4">
           <input
               v-model="email"
               :placeholder="$t('auth.email')"
               v-bind:class="{'form-control':true, 'is-invalid' : errors.email, 'mw-100':true}"
-              type="text"
+              type="email"
           >
           <small
               v-if="errors.email"
@@ -62,21 +62,26 @@
         <div class="form-group mb-4">
           <input
               v-model="confirmPassword"
-              :placeholder="$t('auth.password')"
-              v-bind:class="{'form-control':true, 'is-invalid' : errors.password, 'mw-100':true}"
+              :placeholder="$t('auth.confirmPassword')"
+              v-bind:class="{'form-control':true, 'is-invalid' : errors.confirmPassword, 'mw-100':true}"
               type="password"
           >
           <small
-              v-if="checkPassword"
+              v-if="errors.confirmPassword"
               class="invalid-feedback text-left"
           >
-            {{invalidPassword}}
+            {{errors.confirmPassword.msg}}
           </small>
         </div>
         <div class="form-group">
-          <button class="btn btn-outline-primary mw-75 w-75 m-auto mb-0" type="button" @click="register">{{$t('auth.signUpBtn')}}</button>
+          <button
+              class="btn btn-outline-primary mw-75 w-75 m-auto mb-0"
+              type="submit"
+          >
+            {{$t('auth.signUpBtn')}}
+          </button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </template>
@@ -91,7 +96,6 @@ export default {
     confirmPassword: '',
     firstname: '',
     lastname: '',
-    invalidPassword: ''
   }),
   computed: {
     registerData() {
@@ -100,6 +104,7 @@ export default {
         password: this.password,
         firstname: this.firstname,
         lastname: this.lastname,
+        confirmPassword: this.confirmPassword
       }
     },
     errors() {
@@ -110,7 +115,6 @@ export default {
   methods: {
     register() {
       const vm = this;
-      if(!this.checkPassword()) return
       this.$store
         .dispatch('auth/register', {
           data: this.registerData,
@@ -120,15 +124,6 @@ export default {
           vm.$socket.io.opts.query = {auth_token: token};
           vm.$socket.open()
       })
-    },
-    checkPassword() {
-      if (this.confirmPassword === '') {
-        this.invalidPassword = 'Поле не может быть пустым'
-      } else if(this.password !== this.confirmPassword) {
-        this.invalidPassword = 'Пароли не совпадают'
-        return false
-      }
-      return true
     }
   }
 }

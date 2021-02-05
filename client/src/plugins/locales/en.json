@@ -60,6 +60,19 @@
     "cancel": "Cancel",
     "canChange": "You can edit the whiteboard",
     "canTChange": "You can't edit the whiteboard",
-    "emptyLayers": "You don't have any layer"
+    "emptyLayers": "You don't have any layer",
+    "layers": "Layers",
+    "pan": "Panorama",
+    "pencil": "Pencil",
+    "select": "Select",
+    "pdf": "Upload PDF",
+    "img": "Upload IMG",
+    "addLayer": "Add layer",
+    "deleteLayer": "Delete layer",
+    "selectLayer": "Select layer",
+    "createWhiteboard": "Create new whiteboard",
+    "yourWhiteboards": "Your whiteboards",
+    "copied": "Copied",
+    "clipboardError": "Try again"
   }
 }

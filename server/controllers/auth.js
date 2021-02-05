@@ -21,7 +21,7 @@ exports.login = async (req, res, next) => {
 }
 
 exports.register = async (req, res, next) => {
-  const { email, password, firstname, lastname} = req.body;
+  const { email, password, firstname, lastname, confirmPassword} = req.body;
 
   const hashPassword = await User.hashPassword(password);
 

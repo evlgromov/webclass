@@ -8,8 +8,8 @@ Vue.use(VueI18n);
 const userLang = (navigator.language || navigator.userLanguage).slice(0,2);
 
 export default new VueI18n({
-    locale: (userLang)? userLang : "en",
-    fallbackLocale: (userLang)? userLang : "en",
+    locale: "ru",
+    fallbackLocale: "ru",
     messages: {
         en:en,
         ru:ru

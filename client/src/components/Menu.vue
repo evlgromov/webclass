@@ -24,7 +24,6 @@
       </div>
     </div>
   </nav>
-
 </template>
 
 <script>
@@ -41,6 +40,7 @@ export default {
   },
   mounted() {
     this.locale = localStorage.getItem('locale') || 'ru'
+    this.$i18n.locale = this.locale
   },
   computed: {
     user() {
@@ -57,7 +57,7 @@ export default {
 </script>
 <style lang="scss" scoped>
 select:focus {outline:none;}
-.locale-switcher{
+.locale-switcher {
   display: flex;
   &_icon{
     margin: auto;
@@ -70,6 +70,10 @@ select:focus {outline:none;}
     height: 38px;
     margin-left: -25px;
     padding-left: 25px;
+    padding-right: 8px;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
   }
 }
 </style>

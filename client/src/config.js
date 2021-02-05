@@ -17,10 +17,14 @@ import {BootstrapVue} from "bootstrap-vue";
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap-vue/dist/bootstrap-vue.css"
 
+import Clipboard from 'v-clipboard'
+
 Vue.use(VueAxios, axios);
 Vue.axios.defaults.baseURL = process.env.BACKEND_URL
 
 Vue.use(BootstrapVue)
+
+Vue.use(Clipboard)
 
 Vue.use(auth, {
   auth: authBearer,
@@ -48,7 +52,9 @@ Vue.use(auth, {
 
 Vue.use(new VueSocketIO({
   debug: true,
-  connection: SocketIO(process.env.BACKEND_URL, {query: `auth_token=${Vue.auth.token()}`}),
+  connection: SocketIO(process.env.BACKEND_URL, {
+    query: `auth_token=${Vue.auth.token()}`,
+  }),
   vuex: {
     store,
     actionPrefix: 'SOCKET_',

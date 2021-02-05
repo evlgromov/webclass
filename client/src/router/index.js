@@ -71,6 +71,12 @@ Vue.router = new Router({
       path: '/canvases/:id',
       name: 'Canvas',
       component: Canvas,
+      meta: {
+        auth: true,
+        redirect: {
+          name: 'Login'
+        }
+      },
     },
     {
       path: '/',

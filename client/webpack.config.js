@@ -84,7 +84,15 @@ module.exports = {
             presets: ['@babel/preset-env']
           }
         }
-      }
+      },
+      {
+        test: /\.(svg|png|jpg|jpeg|webp)$/,
+        use: [
+          {
+            loader: 'file-loader'
+          },
+        ]
+      },
     ]
   },
   plugins: [

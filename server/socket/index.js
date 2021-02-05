@@ -5,7 +5,9 @@ module.exports = (server, app) => {
   const io = require('socket.io')(server, {
     cors: {
       origin: '*',
-    }
+    },
+    pingInterval: 4000,
+    pingTimeout: 4000,
   });
   const clients = {};
   // const videocalls = {};

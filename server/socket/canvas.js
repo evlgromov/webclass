@@ -24,7 +24,6 @@ module.exports = (client, io, clients, canvases) => {
   client.on('canvas-add-shape', async (data) => {
     const canvas = canvases[data.canvasId];
     const layer = canvas.layers.find(({_id}) => _id == data.layerId);
-    const id = client.request.user._id;
     if (canvas && layer && data.shape) {
       let shape;
       switch (data.shape.type) {
@@ -123,7 +122,6 @@ module.exports = (client, io, clients, canvases) => {
   client.on('canvas-get-shapes', async (data) => {
     const canvas = canvases[data.canvasId];
     const layer = canvas.layers.find(({_id}) => _id == data.layerId);
-    const id = client.request.user._id;
     if (canvas && layer) {
       const shapes = await Shape.find({ layer: data.layerId });
       client.emit("canvas-got-shapes", {shapes, layerId: data.layerId});
@@ -145,14 +143,14 @@ module.exports = (client, io, clients, canvases) => {
   })
 
   client.on('canvas-delete-layer', async (payload) => {
-    const canvas = canvases[payload.canvasId];
     await Layer.deleteOne({
       _id: payload.layerId
     });
-    const layers = canvas.layers.filter(layer => layer._id !== payload.layerId)
+    canvases[payload.canvasId].layers = canvases[payload.canvasId].layers.filter(layer => layer._id !== payload.layerId)
     io.to(payload.canvasId).emit("canvas-deleted-layer", {
       canvas: payload.canvasId,
       layerId: payload.layerId,
+      layers: canvases[payload.canvasId].layers
     });
   })
 

@@ -1,22 +1,24 @@
 <template>
   <div id="app" v-if="appReady">
-    <!-- <menu-component></menu-component> -->
     <div id="content" class="text-center">
-      <Menu/>
+      <Menu v-if="!isFullscreen"/>
       <router-view />
     </div>
   </div>
 </template>
 
 <script>
-import Vue from 'vue'
 import Menu from './components/Menu';
 
 export default {
   name: 'App',
   data: () => ({
-    connect: false
+    connect: false,
+    isFullscreen: false,
   }),
+  mounted() {
+    this.$root.$on('fullscreen', this.setFullscreenFlag)
+  },
   computed: {
     authReady() {
       return this.$auth.ready();
@@ -24,6 +26,11 @@ export default {
     appReady() {
       return this.authReady && this.connect || this.authReady && !this.$auth.check();
     },
+  },
+  methods: {
+    setFullscreenFlag(value) {
+      this.isFullscreen = value
+    }
   },
   sockets: {
     connect: function() {
@@ -49,7 +56,7 @@ export default {
     #content {
       width: 100vw;
       height: 100vh;
-      margin: 0 auto 50px;
+      margin: 0 auto;
       .form {
         display: flex;
         flex-direction: column;
