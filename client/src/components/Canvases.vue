@@ -8,132 +8,134 @@
       <button class="create__btn btn btn-primary" @click="fetchCreateCanvas">{{ $t('canvases.create') }}</button>
     </form>
     <hr>
-    <h5>{{$t('canvases.yourWhiteboards')}}</h5>
-    <table class="table table-bordered mt-3" v-if="canvases.length">
-      <thead class="thead-light">
-      <tr class="d-flex">
-        <th class="col-2">{{ $t('canvases.title') }}</th>
-        <th class="col-6">{{ $t('canvases.access') }}</th>
-        <th class="col-4">{{ $t('canvases.actions') }}</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr class="d-flex" v-for="(canvas, i) in canvases" :key="canvas._id">
-        <td class="col-2">
-          <input class="form-control" v-if="canvas.updating" v-model="canvas.title" type="text" :placeholder="$t('canvases.title')">
-          <p v-else>{{ canvas.title }}</p>
-        </td>
-        <td class="col-6">
-          <div v-if="!canvas.updating">
-            <div class="mt-2" >
-              <div class="list list-group">
-                <div class="list__item list-group-item list-group-item-action" v-for="user of canvas.accessUsers" :key="user.email">
-                  <div class="list__email">{{ user.email }}</div>
-                  <select
-                      class="list__select custom-select"
-                      v-model="user.canChange"
-                      disabled
-                  >
-                    <option :value="false">{{ $t('canvases.canView') }}</option>
-                    <option :value="true">{{ $t('canvases.canEdit') }}</option>
-                  </select>
+    <div v-if="canvases.length">
+      <h5>{{$t('canvases.yourWhiteboards')}}</h5>
+      <table class="table table-bordered mt-3">
+        <thead class="thead-light">
+        <tr class="d-flex">
+          <th class="col-2">{{ $t('canvases.title') }}</th>
+          <th class="col-6">{{ $t('canvases.access') }}</th>
+          <th class="col-4">{{ $t('canvases.actions') }}</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="d-flex" v-for="(canvas, i) in canvases" :key="canvas._id">
+          <td class="col-2">
+            <input class="form-control" v-if="canvas.updating" v-model="canvas.title" type="text" :placeholder="$t('canvases.title')">
+            <p v-else>{{ canvas.title }}</p>
+          </td>
+          <td class="col-6">
+            <div v-if="!canvas.updating">
+              <div class="mt-2" >
+                <div class="list list-group">
+                  <div class="list__item list-group-item list-group-item-action" v-for="user of canvas.accessUsers" :key="user.email">
+                    <div class="list__email">{{ user.email }}</div>
+                    <select
+                        class="list__select custom-select"
+                        v-model="user.canChange"
+                        disabled
+                    >
+                      <option :value="false">{{ $t('canvases.canView') }}</option>
+                      <option :value="true">{{ $t('canvases.canEdit') }}</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-            <hr v-if="Object.keys(canvas.accessUsers).length">
-            <div class="for-guests">
-              <div>{{ $t('canvases.accessForGuests') }}</div>
-              <select class="mt-2 custom-select" v-model="canvas.access" disabled>
-                <option :value="1">{{ $t('canvases.closedForGuests') }}</option>
-                <option :value="2">{{ $t('canvases.guestsCanView') }}</option>
-                <option :value="3">{{ $t('canvases.guestsCanEdit') }}</option>
-              </select>
-            </div>
-          </div>
-          <div v-else>
-            <div class="add-email">
-              <input
-                  v-model="email"
-                  :placeholder="$t('canvases.addEmail')"
-                  v-bind:class="{'form-control':true, 'is-invalid' : !validEmail(email) && emailBlured}"
-                  v-on:blur="emailBlured = true"
-                  type="email"
-              >
-              <button
-                  class="add-email__btn btn btn-secondary"
-                  @click="addToAccessUsersArray(canvas, email)"
-              >
-                {{ $t('canvases.add') }}
-              </button>
-            </div>
-
-            <div class="mt-2" >
-              <div class="list list-group" v-if="canvas.updating">
-                <div class="list__item list-group-item list-group-item-action" v-for="user of canvas.accessUsers" :key="user.email">
-                  <div class="list__email">{{ user.email }}</div>
-                  <select
-                      class="list__select custom-select"
-                      v-model="user.canChange"
-                  >
-                    <option :value="false">{{ $t('canvases.canView') }}</option>
-                    <option :value="true">{{ $t('canvases.canEdit') }}</option>
-                  </select>
-                  <button
-                      class="list__btn btn btn-secondary"
-                      @click="deleteAccess(canvas, user.email)"
-                  >
-                    {{ $t('canvases.delete') }}
-                  </button>
-                </div>
+              <hr v-if="Object.keys(canvas.accessUsers).length">
+              <div class="for-guests">
+                <div>{{ $t('canvases.accessForGuests') }}</div>
+                <select class="mt-2 custom-select" v-model="canvas.access" disabled>
+                  <option :value="1">{{ $t('canvases.closedForGuests') }}</option>
+                  <option :value="2">{{ $t('canvases.guestsCanView') }}</option>
+                  <option :value="3">{{ $t('canvases.guestsCanEdit') }}</option>
+                </select>
               </div>
             </div>
+            <div v-else>
+              <div class="add-email">
+                <input
+                    v-model="email"
+                    :placeholder="$t('canvases.addEmail')"
+                    v-bind:class="{'form-control':true, 'is-invalid' : !validEmail(email) && emailBlured}"
+                    v-on:blur="emailBlured = true"
+                    type="email"
+                >
+                <button
+                    class="add-email__btn btn btn-secondary"
+                    @click="addToAccessUsersArray(canvas, email)"
+                >
+                  {{ $t('canvases.add') }}
+                </button>
+              </div>
 
-            <small v-if="!validEmail(email) && emailBlured" class="error">Введите правильную почту</small>
+              <div class="mt-2" >
+                <div class="list list-group" v-if="canvas.updating">
+                  <div class="list__item list-group-item list-group-item-action" v-for="user of canvas.accessUsers" :key="user.email">
+                    <div class="list__email">{{ user.email }}</div>
+                    <select
+                        class="list__select custom-select"
+                        v-model="user.canChange"
+                    >
+                      <option :value="false">{{ $t('canvases.canView') }}</option>
+                      <option :value="true">{{ $t('canvases.canEdit') }}</option>
+                    </select>
+                    <button
+                        class="list__btn btn btn-secondary"
+                        @click="deleteAccess(canvas, user.email)"
+                    >
+                      {{ $t('canvases.delete') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-            <hr>
+              <small v-if="!validEmail(email) && emailBlured" class="error">Введите правильную почту</small>
 
-            <div class="for-guests">
-              <div>{{ $t('canvases.accessForGuests') }}</div>
-              <select class="mt-2 custom-select" v-model="canvas.access">
-                <option :value="1">{{ $t('canvases.closedForGuests') }}</option>
-                <option :value="2">{{ $t('canvases.guestsCanView') }}</option>
-                <option :value="3">{{ $t('canvases.guestsCanEdit') }}</option>
-              </select>
+              <hr>
+
+              <div class="for-guests">
+                <div>{{ $t('canvases.accessForGuests') }}</div>
+                <select class="mt-2 custom-select" v-model="canvas.access">
+                  <option :value="1">{{ $t('canvases.closedForGuests') }}</option>
+                  <option :value="2">{{ $t('canvases.guestsCanView') }}</option>
+                  <option :value="3">{{ $t('canvases.guestsCanEdit') }}</option>
+                </select>
+              </div>
+
             </div>
-
-          </div>
-        </td>
-        <td class="col-4" v-if="canvas.updating">
-          <button type="button" class="btn btn-outline-secondary" @click="() => fetchUpdateCanvas(canvas._id, i)">{{ $t('canvases.save') }}</button>
-          <button type="button" class="btn btn-outline-secondary" @click="cancelChanges(canvas)">{{ $t('canvases.cancel') }}</button>
-        </td>
-        <td class="table__actions col-4" v-else>
-          <button type="button" class="table__action btn btn-outline-secondary" @click="() => $router.push({name: 'Canvas', params: {id: canvas._id}})">{{ $t('canvases.open') }}</button>
-          <button
-              type="button"
-              class="btn btn-outline-secondary table__action"
-              @click="toSettings(canvas)"
-          >
-            {{ $t('canvases.settings') }}
-          </button>
-          <button
-              type="button"
-              class="btn btn-outline-secondary table__action"
-              @click="() => fetchRemoveCanvas(canvas._id)"
-          >
-            {{ $t('canvases.delete') }}
-          </button>
-          <button
-              class="icon icon_view_table table__action"
-              v-clipboard="() => currentRoute + '/' + canvas._id"
-              v-b-tooltip.focus.bottom="$t('canvases.copied')"
-          >
-            <font-awesome-icon icon="copy"></font-awesome-icon>
-          </button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+          </td>
+          <td class="col-4" v-if="canvas.updating">
+            <button type="button" class="btn btn-outline-secondary" @click="() => fetchUpdateCanvas(canvas._id, i)">{{ $t('canvases.save') }}</button>
+            <button type="button" class="btn btn-outline-secondary" @click="cancelChanges(canvas)">{{ $t('canvases.cancel') }}</button>
+          </td>
+          <td class="table__actions col-4" v-else>
+            <button type="button" class="table__action btn btn-outline-secondary" @click="() => $router.push({name: 'Canvas', params: {id: canvas._id}})">{{ $t('canvases.open') }}</button>
+            <button
+                type="button"
+                class="btn btn-outline-secondary table__action"
+                @click="toSettings(canvas)"
+            >
+              {{ $t('canvases.settings') }}
+            </button>
+            <button
+                type="button"
+                class="btn btn-outline-secondary table__action"
+                @click="() => fetchRemoveCanvas(canvas._id)"
+            >
+              {{ $t('canvases.delete') }}
+            </button>
+            <button
+                class="icon icon_view_table table__action"
+                v-clipboard="() => currentRoute + '/' + canvas._id"
+                v-b-tooltip.focus.bottom="$t('canvases.copied')"
+            >
+              <font-awesome-icon icon="copy"></font-awesome-icon>
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -336,6 +338,7 @@ export default {
   .table {
     &__actions {
       display: flex;
+      justify-content: center;
       align-items: center;
     }
     &__action + &__action {

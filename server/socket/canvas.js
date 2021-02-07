@@ -134,7 +134,6 @@ module.exports = (client, io, clients, canvases) => {
    */
   client.on('canvas-add-layer', async (canvasId) => {
     const canvas = canvases[canvasId];
-    const userId = client.request.user._id;
     if (canvas) {
       const layer = await Layer.create({canvas: canvasId});
       canvas.layers.push(layer);

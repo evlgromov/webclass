@@ -12,7 +12,8 @@ import {
   faTrashAlt,
   faHome,
   faGlobe,
-  faCopy
+  faCopy,
+  faFont
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
@@ -28,7 +29,8 @@ library.add(
   faTrashAlt,
   faHome,
   faGlobe,
-  faCopy
+  faCopy,
+  faFont
 )
 
 

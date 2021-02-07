@@ -73,6 +73,7 @@
     "createWhiteboard": "Create new whiteboard",
     "yourWhiteboards": "Your whiteboards",
     "copied": "Copied",
-    "clipboardError": "Try again"
+    "clipboardError": "Try again",
+    "text": "Text"
   }
 }
