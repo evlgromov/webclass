@@ -338,6 +338,7 @@ export default {
   .table {
     &__actions {
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
       align-items: center;
     }

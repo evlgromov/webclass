@@ -1,6 +1,6 @@
 <template>
     <div class="wrap">
-<!--        <p class="mt-3">{{ (canChange && layers && layers.length) ? $t('canvases.canChange') : $t('canvases.canTChange') }}</p>-->
+        <!--        <p class="mt-3">{{ (canChange && layers && layers.length) ? $t('canvases.canChange') : $t('canvases.canTChange') }}</p>-->
         <div class="access-msg panel" v-if="!canChange && !layers.length">{{$t('canvases.canTChange')}}</div>
         <div class="nav panel">
             <router-link class="link icon" v-if="$auth.check()" to="/canvases">
@@ -10,6 +10,20 @@
                 <option value="en">En</option>
                 <option value="ru">Ru</option>
             </select>
+        </div>
+        <div class="zoom panel">
+            <div
+                class="icon"
+                @click="onClickScalePlus"
+            >
+                <font-awesome-icon icon="plus"/>
+            </div>
+            <div
+                class="icon"
+                @click="onClickScaleMinus"
+            >
+                <font-awesome-icon icon="minus" />
+            </div>
         </div>
         <div class="layers panel" v-if="layers.length">
             <div class="layers__title">{{$t('canvases.layers')}}</div>
@@ -61,14 +75,6 @@
             </div>
             <div
                 class="toolbar__item icon"
-                ref="text"
-                v-b-tooltip.hover.right="$t('canvases.text')"
-                @click="setTool('text')"
-            >
-                <font-awesome-icon icon="font" />
-            </div>
-            <div
-                class="toolbar__item icon"
                 ref="select"
                 v-b-tooltip.hover.right="$t('canvases.select')"
                 @click="setTool('select')"
@@ -89,6 +95,12 @@
             >
                 <font-awesome-icon icon="file-alt" />
             </div>
+            <!--                <div-->
+            <!--                    class="toolbar__item"-->
+            <!--                    @click="toFullScreen"-->
+            <!--                >-->
+            <!--                    <font-awesome-icon icon="expand-arrows-alt" />-->
+            <!--                </div>-->
             <input
                 ref="inputImg"
                 accept="image/*"
@@ -156,7 +168,9 @@
             },
             shapesToChoose() {
                 return this.currentShapes.filter((shape) =>
-                    shape.type === 'img' && shape.width && shape.height);
+                    shape.type === 'img' && shape.width && shape.height
+                    || shape.type === 'pencil' && shape.width && shape.height
+                );
             },
             currentLayerAll() {
                 return this.layers.find(({_id}) => _id == this.currentLayer);
@@ -182,6 +196,9 @@
                 this.getShapes();
             },
             tool: function(n, o) {
+                if (o === 'select') {
+                    this.isShapeSelected = false
+                }
                 if (n === 'img') {
                     this.$refs.inputImg.click();
                     this.tool = undefined;
@@ -214,10 +231,6 @@
                 this.sockets.subscribe("canvas-changed-position-shapes", this.onChangedPositionShapes);
                 this.sockets.subscribe("canvas-info", this.onInfo);
                 this.sockets.subscribe("canvas-reloaded", this.onReloaded);
-                // document.addEventListener('fullscreenchange', this.closeFullScreenMode);
-                // document.addEventListener('webkitfullscreenchange', this.closeFullScreenMode);
-                // document.addEventListener('mozfullscreenchange', this.closeFullScreenMode);
-                // document.addEventListener('MSFullscreenChange', this.closeFullScreenMode);
                 window.addEventListener('resize', this.debounce(this.onResizeCanvas, 300));
             },
             unsubscribeListeners() {
@@ -230,15 +243,11 @@
                 this.sockets.unsubscribe("canvas-info");
                 this.sockets.unsubscribe("canvas-reloaded");
                 window.removeEventListener('resize', this.debounce(this.onResizeCanvas, 300));
-
-                // document.removeEventListener('fullscreenchange', this.closeFullScreenMode);
-                // document.removeEventListener('webkitfullscreenchange', this.closeFullScreenMode);
-                // document.removeEventListener('mozfullscreenchange', this.closeFullScreenMode);
-                // document.removeEventListener('MSFullscreenChange', this.closeFullScreenMode);
             },
-            async onAddedShape(data) {
-                this.shapes = [...this.shapes.filter(shape => shape._id !== undefined), ...await this.shapesMapFromServer(data.shapes)]
-                if (data.shape.layer == this.currentLayer) {
+
+            async onAddedShape(shape) {
+                this.shapes.push(await this.shapeMapFromServer(shape));
+                if (shape.layer == this.currentLayer) {
                     this.rerender();
                 }
             },
@@ -259,16 +268,25 @@
             },
             async onGotShapes(data) {
                 this.layers = this.layers.map((layer) => layer._id == data.layerId ? {...layer, gotShapes: true} : layer);
-                this.shapes = [...this.shapes, ...(await this.shapesMapFromServer(data.shapes))];
+                this.shapes = [
+                    ...this.shapes.filter(shape => shape.layer !== data.layerId),
+                    ...(await this.shapesMapFromServer(data.shapes))
+                ];
                 this.rerender();
             },
             onChangedPositionShapes(data) {
+                this.selectedShapes = []
                 this.shapes = this.shapes.map((shape) => {
-                    const newData = data.shapes.find(({_id}) => shape._id == _id);
+                    let newData = data.shapes.find(({_id}) => shape._id == _id);
                     if (newData) {
-                        const newShape = {...shape, x: newData.x, y: newData.y};
-                        const i = this.selectedShapes.findIndex((selectedShape) => shape._id == selectedShape._id);
-                        this.selectedShapes[i] = newShape;
+                        let newShape;
+                        if (newData.type === 'pencil') {
+                            newData.points = newData.points.map(this.decodeСoord)
+                            newShape = {...shape, x: newData.x, y: newData.y, points: newData.points};
+                        } else {
+                            newShape = {...shape, x: newData.x, y: newData.y};
+                        }
+                        this.selectedShapes.push(newShape);
                         return newShape;
                     }
                     return shape;
@@ -291,6 +309,7 @@
             onReloaded(data) {
                 console.log(data)
             },
+
             setActionWithCanvas() {
                 this.canvas.addEventListener('mousedown', this.onMouseDown);
                 this.canvas.addEventListener('mousemove', this.onMouseMove);
@@ -317,10 +336,9 @@
                             height: img.height,
                             src: img.src,
                         };
-                        this.emitCreateShape(shape);
                         shape.img = img;
-                        this.shapes.push(shape)
-                        this.rerender()
+                        this.emitCreateShape(shape);
+                        this.rerender();
                     }
                     img.src = e.target.result;
                 }
@@ -433,6 +451,7 @@
                 });
                 return shape
             },
+
             rerender() {
                 this.clearCanvas();
                 this.renderShapes();
@@ -489,6 +508,7 @@
             renderImgShape(shape) {
                 this.context.drawImage(shape.img, this.clientX(shape.x), this.clientY(shape.y));
             },
+
             onMouseDown(e) {
                 this.isMouseDown = true;
                 this.lastX = e.offsetX;
@@ -541,6 +561,12 @@
                         case 'select':
                             if (this.isShapeSelected) {
                                 for (let shape of this.selectedShapes) {
+                                    if(shape.type === 'pencil') {
+                                        shape.points.map(coords => {
+                                            coords[0] += e.offsetX - this.lastX;
+                                            coords[1] += e.offsetY - this.lastY;
+                                        })
+                                    }
                                     shape.x += e.offsetX - this.lastX;
                                     shape.y += e.offsetY - this.lastY;
                                 }
@@ -563,14 +589,45 @@
 
                 switch (this.tool) {
                     case 'pencil':
-                        this.emitCreateShape({type: this.tool, points: this.newShape.map(this.encodeCoord)});
+                        // this.newShape - содержит все точки новой линии
+                        // Нужно найти в этом массиве min(x), max(x)
+                        // Нужно найти в этом массиве min(y), max(y)
+                        // width = max(x) - min(x)
+                        // height = max(y) - min(y)
+                        let minX = this.newShape[0][0]
+                        let maxX = this.newShape[0][0]
+                        let minY = this.newShape[0][1]
+                        let maxY = this.newShape[0][1]
+                        this.newShape.forEach(i => {
+                            if(i[0] < minX) minX = i[0]
+                            if(i[0] > maxX) maxX = i[0]
+                            if(i[1] < minY) minY = i[1]
+                            if(i[1] > maxY) maxY = i[1]
+                        })
+                        const lineWidth = maxX - minX
+                        const lineHeight = maxY - minY
+                        this.emitCreateShape({
+                            type: this.tool,
+                            points: this.newShape.map(this.encodeCoord),
+                            width: lineWidth,
+                            height: lineHeight,
+                            x: this.serverX(minX),
+                            y: this.serverY(minY),
+                        });
+                        this.shapes.push({layer: this.currentLayer, type: this.tool, points: this.newShape});
                         this.newShape = [];
                         break;
                     case 'pan':
                         break;
                     case 'select':
                         if (this.isShapeSelectedChanged) {
-                            this.emitChangePositionShapes(this.selectedShapes.map(({_id, x, y}) => ({_id, x, y})));
+                            this.selectedShapes = this.selectedShapes.map(shape => {
+                                    if(shape.type === 'pencil') {
+                                        shape.points = shape.points.map(this.encodeCoord)
+                                    }
+                                    return shape
+                                })
+                            this.emitChangePositionShapes(this.selectedShapes);
                             this.isShapeSelectedChanged = false;
                         }
                         if (!this.isShapeSelected && this.selectedW && this.selectedH) {
@@ -587,23 +644,10 @@
                         this.selectedH = 0;
                         break;
                 }
+
                 this.rerender();
             },
-            onClickAddLayer() {
-                this.emitAddLayer();
-            },
-            onClickDeleteLayer() {
-                if (this.layers.length === 1) return
-                this.emitDeleteLayer();
-            },
-            onResizeCanvas() {
-                this.canvas.width = window.innerWidth
-                this.canvas.height = window.innerHeight
-                const canvasData = this.canvas.getBoundingClientRect();
-                this.canvasW = canvasData.width;
-                this.canvasH = canvasData.height;
-                this.rerender()
-            },
+
             overlap(x1, y1, w1, h1, x2, y2, w2 = 1, h2 = 1) {
                 return !(((x1 + w1) < x2) || ((x2 + w2) < x1) || ((y1 + h1) < y2) || ((y2 + h2) < y1));
             },
@@ -641,12 +685,14 @@
                 }
                 return res;
             },
+
             decodeСoord(coord) {
                 return coord.split(':').map((a) => parseInt(a));
             },
             encodeCoord(coord) {
                 return `${coord[0]}:${coord[1]}`;
             },
+
             emitGetShapes() {
                 this.$socket.emit("canvas-get-shapes", {canvasId: this.canvasId, layerId: this.currentLayer});
             },
@@ -670,6 +716,28 @@
                     canvasId: this.canvasId,
                     layerId: this.currentLayer
                 });
+            },
+
+            onClickAddLayer() {
+                this.emitAddLayer();
+            },
+            onClickDeleteLayer() {
+                if (this.layers.length === 1) return
+                this.emitDeleteLayer();
+            },
+            onResizeCanvas() {
+                this.canvas.width = window.innerWidth
+                this.canvas.height = window.innerHeight
+                const canvasData = this.canvas.getBoundingClientRect();
+                this.canvasW = canvasData.width;
+                this.canvasH = canvasData.height;
+                this.rerender()
+            },
+            onClickScalePlus() {
+
+            },
+            onClickScaleMinus() {
+
             },
 
             debounce(fn, wait) {
@@ -804,5 +872,15 @@
         background: #ededed;
         border-radius: 5px;
         z-index: 1;
+    }
+    .zoom {
+        flex-direction: column;
+        padding: 3px;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        & .icon + .icon {
+            margin-top: 3px;
+        }
     }
 </style>

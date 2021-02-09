@@ -31,7 +31,11 @@ module.exports = (client, io, clients, canvases) => {
           shape = await Shape.create({
             type: 'pencil',
             layer: data.layerId,
+            x: data.shape.x,
+            y: data.shape.y,
             points: data.shape.points,
+            width: data.shape.width,
+            height: data.shape.height
           });
           break;
         case 'img':
@@ -46,8 +50,9 @@ module.exports = (client, io, clients, canvases) => {
           });
           break;
       }
-
+      const shapes = await Shape.find({ layer: data.layerId });
       client.to(data.canvasId).emit("canvas-added-shape", shape);
+      client.emit("canvas-got-shapes", {shapes, layerId: data.layerId});
     }
   });
 
@@ -100,16 +105,19 @@ module.exports = (client, io, clients, canvases) => {
   client.on('canvas-change-position-shapes', async (data) => {
     const canvas = canvases[data.canvasId];
     const layer = canvas.layers.find(({_id}) => _id == data.layerId);
-    const id = client.request.user._id;
     if (canvas && layer) {
       const shapes = [];
       for (let shape of data.shapes) {
-        const res = await Shape.updateOne({_id: shape._id, layer: data.layerId}, {x: shape.x, y: shape.y});
+        const res = await Shape.updateOne({_id: shape._id, layer: data.layerId}, {
+          x: shape.x,
+          y: shape.y,
+          points: shape.points
+        });
         if (res.n) {
           shapes.push(shape)
         }
       }
-      client.to(data.canvasId).emit("canvas-changed-position-shapes", {shapes, layerId: data.layerId});
+      io.to(data.canvasId).emit("canvas-changed-position-shapes", {shapes, layerId: data.layerId});
     }
   })
 

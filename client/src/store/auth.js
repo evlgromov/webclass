@@ -15,6 +15,7 @@ export default {
     },
 
     login(ctx, data) {
+      ctx.commit('clearLoginErrors')
       return new Promise((resolve, reject) => {
         Vue.auth.login({
           data: data.data,
@@ -26,8 +27,6 @@ export default {
           Vue.auth.user(data.user);
           Vue.auth.remember(JSON.stringify(ctx.getters.user));
           Vue.auth.token('jwtToken', data.jwt_token.token, data.jwt_token.expires);
-
-          ctx.commit('clearLoginErrors')
 
           resolve(res);
         }).catch(e => {
@@ -56,6 +55,7 @@ export default {
   },
   mutations: {
     setLoginErrors(state, errors) {
+      state.loginErrors = errors
     },
     setRegisterErrors(state, errors) {
       state.registerErrors = errors
