@@ -247,6 +247,7 @@
 
             async onAddedShape(shape) {
                 this.shapes.push(await this.shapeMapFromServer(shape));
+                this.shapes = this.shapes.filter(shape => shape._id !== undefined)
                 if (shape.layer == this.currentLayer) {
                     this.rerender();
                 }
@@ -338,6 +339,7 @@
                         };
                         shape.img = img;
                         this.emitCreateShape(shape);
+                        this.shapes.push(shape)
                         this.rerender();
                     }
                     img.src = e.target.result;
@@ -621,13 +623,16 @@
                         break;
                     case 'select':
                         if (this.isShapeSelectedChanged) {
-                            this.selectedShapes = this.selectedShapes.map(shape => {
-                                    if(shape.type === 'pencil') {
-                                        shape.points = shape.points.map(this.encodeCoord)
-                                    }
-                                    return shape
-                                })
-                            this.emitChangePositionShapes(this.selectedShapes);
+                            const selected = []
+                            this.selectedShapes.forEach((shape) => {
+                                selected.push({...shape})
+                            })
+                            selected.map(shape => {
+                                if(shape.type === 'pencil') {
+                                    shape.points = shape.points.map(this.encodeCoord)
+                                }
+                            })
+                            this.emitChangePositionShapes(selected);
                             this.isShapeSelectedChanged = false;
                         }
                         if (!this.isShapeSelected && this.selectedW && this.selectedH) {

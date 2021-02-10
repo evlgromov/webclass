@@ -50,9 +50,7 @@ module.exports = (client, io, clients, canvases) => {
           });
           break;
       }
-      const shapes = await Shape.find({ layer: data.layerId });
-      client.to(data.canvasId).emit("canvas-added-shape", shape);
-      client.emit("canvas-got-shapes", {shapes, layerId: data.layerId});
+      io.to(data.canvasId).emit("canvas-added-shape", shape);
     }
   });
 
