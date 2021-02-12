@@ -15,7 +15,9 @@ import {
   faHome,
   faGlobe,
   faCopy,
-  faFont
+  faFont,
+  faTrash,
+  faEraser
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
@@ -34,7 +36,9 @@ library.add(
   faHome,
   faGlobe,
   faCopy,
-  faFont
+  faFont,
+  faTrash,
+  faEraser
 )
 
 

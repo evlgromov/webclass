@@ -75,6 +75,14 @@
             </div>
             <div
                 class="toolbar__item icon"
+                ref="eraser"
+                v-b-tooltip.hover.right="$t('canvases.erase')"
+                @click="setTool('eraser')"
+            >
+                <font-awesome-icon icon="eraser" />
+            </div>
+            <div
+                class="toolbar__item icon"
                 ref="select"
                 v-b-tooltip.hover.right="$t('canvases.select')"
                 @click="setTool('select')"
@@ -95,12 +103,6 @@
             >
                 <font-awesome-icon icon="file-alt" />
             </div>
-            <!--                <div-->
-            <!--                    class="toolbar__item"-->
-            <!--                    @click="toFullScreen"-->
-            <!--                >-->
-            <!--                    <font-awesome-icon icon="expand-arrows-alt" />-->
-            <!--                </div>-->
             <input
                 ref="inputImg"
                 accept="image/*"
@@ -113,6 +115,18 @@
                 style="display:none"
                 type="file"
                 @change="handleChangeInputPdf" />
+        </div>
+        <div
+            class="edit panel"
+            v-if="isShapeSelected && canChange"
+            :style="{top:panelPositionY + 'px', left:panelPositionX + 'px'}"
+        >
+            <div
+                class="icon"
+                @click="onClickDeleteShape"
+            >
+                <font-awesome-icon icon="trash"></font-awesome-icon>
+            </div>
         </div>
         <canvas
             ref="canvas"
@@ -160,7 +174,10 @@
 
             access: false,
             isFullscreen: false,
-            locale: undefined
+            locale: undefined,
+
+            panelPositionX: undefined,
+            panelPositionY: undefined,
         }),
         computed: {
             currentShapes() {
@@ -225,6 +242,7 @@
                 this.sockets.subscribe("canvas-added-shape", this.onAddedShape);
                 this.sockets.subscribe("canvas-added-layer", this.onAddedLayer);
                 this.sockets.subscribe("canvas-deleted-layer", this.onDeletedLayer);
+                this.sockets.subscribe("canvas-deleted-shapes", this.onDeletedShapes);
                 this.sockets.subscribe("canvas-added-shapes", this.onAddedShapes);
                 this.sockets.subscribe("canvas-added-layers", this.onAddedLayers);
                 this.sockets.subscribe("canvas-got-shapes", this.onGotShapes);
@@ -244,7 +262,6 @@
                 this.sockets.unsubscribe("canvas-reloaded");
                 window.removeEventListener('resize', this.debounce(this.onResizeCanvas, 300));
             },
-
             async onAddedShape(shape) {
                 this.shapes.push(await this.shapeMapFromServer(shape));
                 this.shapes = this.shapes.filter(shape => shape._id !== undefined)
@@ -264,6 +281,12 @@
                 this.shapes = [...this.shapes, ...(await this.shapesMapFromServer(shapes))];
                 this.rerender();
             },
+            onDeletedShapes(deletedShapes) {
+                deletedShapes.forEach(deletedShape => {
+                    this.shapes = this.shapes.filter(shape => shape._id !== deletedShape._id)
+                })
+                this.rerender()
+            },
             onAddedLayers(layers) {
                 this.layers = [...this.layers, ...layers.map((layer) => ({...layer, gotShapes: false}))];
             },
@@ -281,7 +304,7 @@
                     let newData = data.shapes.find(({_id}) => shape._id == _id);
                     if (newData) {
                         let newShape;
-                        if (newData.type === 'pencil') {
+                        if (newData.type === 'pencil' && typeof newData.points === 'string') {
                             newData.points = newData.points.map(this.decodeСoord)
                             newShape = {...shape, x: newData.x, y: newData.y, points: newData.points};
                         } else {
@@ -436,6 +459,8 @@
                 switch (shape.type) {
                     case 'pencil':
                         return this.shapesMapDecode(shape);
+                    case 'eraser':
+                        return this.shapesMapDecode(shape);
                     case 'img':
                         return await this.shapesMapImg(shape);
                 }
@@ -470,6 +495,9 @@
                         case 'pencil':
                             this.renderPencilShape(shape);
                             break;
+                        case 'eraser':
+                            this.renderEraserShape(shape);
+                            break;
                         case 'img':
                             this.renderImgShape(shape);
                             break;
@@ -479,14 +507,21 @@
             renderSelect() {
                 if (this.isSelectActive) {
                     this.context.strokeStyle = 'red';
+                    this.context.lineWidth = 1;
+                    this.context.globalCompositeOperation = 'source-over'
+
                     this.context.setLineDash([5, 5]);
                     for (let shape of this.selectedShapes) {
                         this.context.strokeRect(this.clientX(shape.x), this.clientY(shape.y), shape.width, shape.height);
+                        this.panelPositionX = this.clientX(shape.x)
+                        this.panelPositionY = this.clientY(shape.y)
                     }
                     this.context.setLineDash([]);
                 }
                 if (this.selectedW || this.selectedH) {
                     this.context.strokeStyle = 'green';
+                    this.context.lineWidth = 1;
+                    this.context.globalCompositeOperation = 'source-over'
                     this.context.setLineDash([5, 5]);
                     this.context.strokeRect(this.clientX(this.selectedX), this.clientY(this.selectedY), this.selectedW, this.selectedH);
                     this.context.setLineDash([]);
@@ -497,6 +532,9 @@
                     this.context.beginPath();
                     this.context.strokeStyle = 'black';
                     this.context.lineWidth = 1;
+                    this.context.lineCap = 'round'
+                    this.context.lineJoin = 'round'
+                    this.context.globalCompositeOperation = 'source-over'
                     let coord = shape.points[0];
                     this.context.moveTo(this.clientX(coord[0]), this.clientY(coord[1]));
                     for (let i = 1; i < shape.points.length; i++) {
@@ -504,10 +542,27 @@
                         this.context.lineTo(this.clientX(coord[0]), this.clientY(coord[1]));
                     }
                     this.context.stroke();
-                    this.context.closePath();
+                }
+            },
+            renderEraserShape(shape) {
+                if(shape.points && shape.points.length) {
+                    this.context.beginPath();
+                    this.context.strokeStyle = 'black';
+                    this.context.lineWidth = 40;
+                    this.context.lineCap = 'round'
+                    this.context.lineJoin = 'round'
+                    this.context.globalCompositeOperation = 'destination-out'
+                    let coord = shape.points[0];
+                    this.context.moveTo(this.clientX(coord[0]), this.clientY(coord[1]));
+                    for (let i = 1; i < shape.points.length; i++) {
+                        let coord = shape.points[i];
+                        this.context.lineTo(this.clientX(coord[0]), this.clientY(coord[1]));
+                    }
+                    this.context.stroke();
                 }
             },
             renderImgShape(shape) {
+                this.context.globalCompositeOperation = 'source-over'
                 this.context.drawImage(shape.img, this.clientX(shape.x), this.clientY(shape.y));
             },
 
@@ -517,6 +572,10 @@
                 this.lastY = e.offsetY;
                 switch (this.tool) {
                     case 'pencil':
+                        console.log(this.tool)
+                        this.newShape = [[this.serverX(e.offsetX), this.serverY(e.offsetY)]];
+                        break;
+                    case 'eraser':
                         this.newShape = [[this.serverX(e.offsetX), this.serverY(e.offsetY)]];
                         break;
                     case 'pan':
@@ -524,6 +583,8 @@
                     case 'select':
                         if (this.isShapeSelected) {
                             if (!this.anyOverlapWithSelectedShapes(this.serverX(e.offsetX), this.serverY(e.offsetY))) {
+                                this.panelPositionX = this.clientX(e.offsetX)
+                                this.panelPositionY = this.clientY(e.offsetY)
                                 this.selectedShapes = [];
                                 this.isShapeSelected = false;
                                 this.rerender();
@@ -550,10 +611,25 @@
                             this.context.beginPath();
                             this.context.strokeStyle = 'black';
                             this.context.lineWidth = 1;
+                            this.context.lineCap = 'round'
+                            this.context.lineJoin = 'round'
+                            this.context.globalCompositeOperation = 'source-over'
                             this.context.moveTo(this.lastX, this.lastY);
                             this.context.lineTo(e.offsetX, e.offsetY);
                             this.context.stroke();
                             this.context.closePath();
+                            break;
+                        case 'eraser':
+                            this.newShape.push([this.serverX(e.offsetX), this.serverY(e.offsetY)]);
+                            this.context.beginPath();
+                            this.context.strokeStyle = 'black';
+                            this.context.lineCap = 'round'
+                            this.context.lineJoin = 'round'
+                            this.context.lineWidth = 40;
+                            this.context.globalCompositeOperation = 'destination-out'
+                            this.context.moveTo(this.lastX, this.lastY);
+                            this.context.lineTo(e.offsetX, e.offsetY);
+                            this.context.stroke();
                             break;
                         case 'pan':
                             this.x += this.lastX - e.offsetX;
@@ -591,11 +667,6 @@
 
                 switch (this.tool) {
                     case 'pencil':
-                        // this.newShape - содержит все точки новой линии
-                        // Нужно найти в этом массиве min(x), max(x)
-                        // Нужно найти в этом массиве min(y), max(y)
-                        // width = max(x) - min(x)
-                        // height = max(y) - min(y)
                         let minX = this.newShape[0][0]
                         let maxX = this.newShape[0][0]
                         let minY = this.newShape[0][1]
@@ -615,6 +686,14 @@
                             height: lineHeight,
                             x: this.serverX(minX),
                             y: this.serverY(minY),
+                        });
+                        this.shapes.push({layer: this.currentLayer, type: this.tool, points: this.newShape});
+                        this.newShape = [];
+                        break;
+                    case 'eraser':
+                        this.emitCreateShape({
+                            type: this.tool,
+                            points: this.newShape.map(this.encodeCoord),
                         });
                         this.shapes.push({layer: this.currentLayer, type: this.tool, points: this.newShape});
                         this.newShape = [];
@@ -722,6 +801,12 @@
                     layerId: this.currentLayer
                 });
             },
+            emitDeleteShapes() {
+                this.$socket.emit("canvas-delete-shape", {
+                    canvasId: this.canvasId,
+                    shapes: this.selectedShapes
+                });
+            },
 
             onClickAddLayer() {
                 this.emitAddLayer();
@@ -743,6 +828,15 @@
             },
             onClickScaleMinus() {
 
+            },
+            onClickDeleteShape() {
+                this.emitDeleteShapes()
+                this.selectedShapes.forEach(selectedShape=> {
+                    this.shapes = this.shapes.filter(shape => shape._id !== selectedShape._id)
+                })
+                this.selectedShapes = []
+                this.isShapeSelected = false
+                this.rerender()
             },
 
             debounce(fn, wait) {
@@ -794,6 +888,10 @@
         position: absolute;
         top: 0;
         left: 0;
+        cursor: crosshair;
+        &:active {
+            cursor: crosshair;
+        }
     }
     .layers {
         top: 10px;
@@ -887,5 +985,17 @@
         & .icon + .icon {
             margin-top: 3px;
         }
+    }
+    .edit {
+        padding: 3px;
+        transform:translateX(-115%)
+    }
+    .wrap {
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none;   /* Chrome/Safari/Opera */
+        -khtml-user-select: none;    /* Konqueror */
+        -moz-user-select: none;      /* Firefox */
+        -ms-user-select: none;       /* Internet Explorer/Edge */
+        user-select: none;
     }
 </style>

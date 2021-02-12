@@ -38,6 +38,13 @@ module.exports = (client, io, clients, canvases) => {
             height: data.shape.height
           });
           break;
+        case 'eraser' :
+          shape = await Shape.create({
+            type: 'eraser',
+            layer: data.layerId,
+            points: data.shape.points,
+          });
+          break;
         case 'img':
           shape = await Shape.create({
             type: 'img',
@@ -147,6 +154,12 @@ module.exports = (client, io, clients, canvases) => {
     }
   })
 
+  /**
+   * @param {Object} payload - данные, поступившие от юзера
+   * * @param {string} payload.canvasId - id холста
+   * @param {string} payload.shapes - шейпы, которые нужно удалить
+   * @description Юзер удаляет объекты на холсте.
+   */
   client.on('canvas-delete-layer', async (payload) => {
     await Layer.deleteOne({
       _id: payload.layerId
@@ -157,6 +170,15 @@ module.exports = (client, io, clients, canvases) => {
       layerId: payload.layerId,
       layers: canvases[payload.canvasId].layers
     });
+  })
+
+  client.on('canvas-delete-shape', (payload) => {
+     payload.shapes.forEach(async shape => {
+       await Shape.deleteOne({
+         _id: shape._id
+       })
+    })
+    client.to(payload.canvasId).emit("canvas-deleted-shapes", payload.shapes);
   })
 
   /**

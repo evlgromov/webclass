@@ -4,6 +4,13 @@
       <Menu v-if="!isFullscreen"/>
       <router-view />
     </div>
+    <b-modal ref="modal" hide-footer title="Webclass Whiteboard">
+      <div class="d-block text-center">
+        <h3>Ошибка</h3>
+        <p>Произошла ошибка передачи данных с сервером. Пожалуйста перезагрузите страницу.</p>
+      </div>
+      <b-button class="mt-3" variant="outline-danger" block @click="hideModal">Close Me</b-button>
+    </b-modal>
   </div>
 </template>
 
@@ -30,7 +37,13 @@ export default {
   methods: {
     setFullscreenFlag(value) {
       this.isFullscreen = value
-    }
+    },
+    showModal() {
+      this.$refs['modal'].show()
+    },
+    hideModal() {
+      this.$refs['modal'].hide()
+    },
   },
   sockets: {
     connect: function() {
@@ -39,6 +52,7 @@ export default {
     },
     disconnect: function() {
       console.log('Disconnected')
+      this.showModal()
     }
   },
   components: {
