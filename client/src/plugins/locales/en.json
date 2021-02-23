@@ -75,6 +75,8 @@
     "copied": "Copied",
     "clipboardError": "Try again",
     "text": "Text",
-    "erase": "Erase"
+    "erase": "Erase",
+    "undo": "Undo",
+    "redo": "Redo"
   }
 }

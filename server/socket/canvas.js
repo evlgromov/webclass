@@ -35,7 +35,7 @@ module.exports = (client, io, clients, canvases) => {
             y: data.shape.y,
             points: data.shape.points,
             width: data.shape.width,
-            height: data.shape.height
+            height: data.shape.height,
           });
           break;
         case 'eraser' :
@@ -56,6 +56,18 @@ module.exports = (client, io, clients, canvases) => {
             src: data.shape.src,
           });
           break;
+        case 'text':
+          shape = await Shape.create({
+            type: 'text',
+            layer: data.layerId,
+            x: data.shape.x,
+            y: data.shape.y,
+            src: data.shape.src,
+            height: data.shape.height,
+            width: data.shape.width,
+            fontSize: data.shape.fontSize,
+            textColor: data.shape.textColor
+          })  
       }
       io.to(data.canvasId).emit("canvas-added-shape", shape);
     }
@@ -125,7 +137,16 @@ module.exports = (client, io, clients, canvases) => {
       io.to(data.canvasId).emit("canvas-changed-position-shapes", {shapes, layerId: data.layerId});
     }
   })
-
+  client.on('canvas-update-fontsize', async (data) => {
+    const canvas = canvases[data.canvasId];
+    let shape = data.shape
+    const res = await Shape.updateOne({_id: shape._id}, {
+      ...shape
+    });
+    if (res.n) {
+      io.to(data.canvasId).emit("canvas-updated-fontsize", {shape, canvasId: data.canvasId});
+    }
+  })
   /**
    * @param {Object} data - Данные, которые поступили от юзера
    * @param {string} data.canvasId - id холста
@@ -164,6 +185,9 @@ module.exports = (client, io, clients, canvases) => {
     await Layer.deleteOne({
       _id: payload.layerId
     });
+    await Shape.deleteMany({
+      layer: payload.layerId
+    })
     canvases[payload.canvasId].layers = canvases[payload.canvasId].layers.filter(layer => layer._id !== payload.layerId)
     io.to(payload.canvasId).emit("canvas-deleted-layer", {
       canvas: payload.canvasId,
@@ -172,13 +196,11 @@ module.exports = (client, io, clients, canvases) => {
     });
   })
 
-  client.on('canvas-delete-shape', (payload) => {
-     payload.shapes.forEach(async shape => {
-       await Shape.deleteOne({
-         _id: shape._id
-       })
+  client.on('canvas-delete-shape', async (payload) => {
+    await Shape.deleteOne({
+      _id: payload.shape._id
     })
-    client.to(payload.canvasId).emit("canvas-deleted-shapes", payload.shapes);
+    client.to(payload.canvasId).emit("canvas-deleted-shape", payload.shape);
   })
 
   /**

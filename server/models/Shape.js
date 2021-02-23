@@ -9,7 +9,7 @@ const Shape = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['pencil', 'img', 'eraser'],
+    enum: ['pencil', 'img', 'eraser', 'text'],
   },
   points: {
     type: [String],
@@ -29,6 +29,12 @@ const Shape = new mongoose.Schema({
   },
   height: {
     type: Number
+  },
+  fontSize: {
+    type: Number
+  },
+  textColor: {
+    type: String
   }
 }, { versionKey: false });
 

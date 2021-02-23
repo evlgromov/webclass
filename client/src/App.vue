@@ -9,7 +9,7 @@
         <h3>Ошибка</h3>
         <p>Произошла ошибка передачи данных с сервером. Пожалуйста перезагрузите страницу.</p>
       </div>
-      <b-button class="mt-3" variant="outline-danger" block @click="hideModal">Close Me</b-button>
+      <b-button class="mt-3" variant="outline-danger" block @click="hideModal">Перезагрузить</b-button>
     </b-modal>
   </div>
 </template>
@@ -42,6 +42,7 @@ export default {
       this.$refs['modal'].show()
     },
     hideModal() {
+      window.location.reload()
       this.$refs['modal'].hide()
     },
   },
