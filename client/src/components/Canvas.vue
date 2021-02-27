@@ -139,31 +139,25 @@
         @change="handleChangeInputPdf"
       />
     </div>
+
     <div
       class="edit panel"
-      v-if="isShapeSelected && canChange"
+      v-if="isShapeSelected && canChange && !textShape"
       :style="{ top: panelPositionY + 'px', left: panelPositionX + 'px' }"
     >
       <div class="icon" @click="onClickDeleteShape">
         <font-awesome-icon icon="trash"></font-awesome-icon>
       </div>
-      <select
-      class="edit__select"
-      v-if="textShape"
-      v-model="textFontSize"
-      @change="onChangeFontSize"
-      >
-        <option value="16">16px</option>
-        <option value="22">22px</option>
-        <option value="30">30px</option>
-        <option value="40">40px</option>
-      </select>
     </div>
+
     <div
       class="edit panel panel_hidden"
-      ref="textEditPanel"
+      ref=textEditPanel
     >
-      <div class="icon" @click="cancelPrintText">
+      <div v-if=isShapeSelected class="icon" @click="onClickDeleteShape">
+        <font-awesome-icon icon="trash"></font-awesome-icon>
+      </div>
+      <div v-else class="icon" @click="hideTextInput">
         <font-awesome-icon icon="trash"></font-awesome-icon>
       </div>
       <div
@@ -183,6 +177,7 @@
         <option value="40">40px</option>
       </select>
     </div>
+
     <div
       class="palette panel"
       ref=textColor
@@ -317,6 +312,7 @@ export default {
       this.tool = "pencil";
     },
     tool: function(n, o) {
+      this.hideTextInput()
       if (o === "select") {
         this.isShapeSelected = false;
       }
@@ -329,12 +325,17 @@ export default {
         this.tool = undefined;
       }
       if (this.$refs[o] !== undefined)
-        this.$refs[o].classList.remove("icon_active");
+        this.$refs[o].classList.remove("icon_active")
     },
     locale: function(n, o) {
       localStorage.setItem("locale", n);
       this.locale = n;
       this.$i18n.locale = n;
+    },
+    isShapeSelected: function(n, o) {
+      if(!n) {
+        this.$refs.textEditPanel.classList.add('panel_hidden')
+      }
     }
   },
   methods: {
@@ -359,6 +360,7 @@ export default {
       this.sockets.subscribe("canvas-info", this.onInfo);
       this.sockets.subscribe("canvas-reloaded", this.onReloaded);
       this.sockets.subscribe("canvas-updated-fontsize", this.onUpdatedFontSize);
+      this.sockets.subscribe("canvas-updated-shape-color", this.onUpdatedShapeColor);
       window.addEventListener(
         "resize",
         this.debounce(this.onResizeCanvas, 300)
@@ -383,6 +385,7 @@ export default {
       this.canvas.removeEventListener("click", this.onMouseClick);
       this.$refs.textarea.removeEventListener('click', this.textInputToogle)
       this.sockets.unsubscribe("canvas-updated-fontsize");
+      this.sockets.unsubscribe("canvas-updated-shape-color");
     },
 
     async onAddedShape(shape) {
@@ -477,6 +480,21 @@ export default {
     onReloaded(data) {
       console.log(data);
     },
+    onUpdatedShapeColor(data) {
+      this.shapes = this.shapes.map(shape => {
+        if(shape._id === data.shape._id) {
+          shape = {...data.shape}
+        }
+        return shape
+      })
+      this.selectedShapes = this.selectedShapes.map(shape => {
+        if(shape._id === data.shape._id) {
+          shape = {...data.shape}
+        }
+        return shape
+      })
+      this.rerender()
+    },
     onUpdatedFontSize(data) {
       this.shapes = this.shapes.map(shape => {
         if(shape._id === data.shape._id) {
@@ -498,13 +516,16 @@ export default {
           top:${this.textY}px;
           left:${this.textX}px;
           font-size:${this.textFontSize}px;
+          color:${this.textColor};
+          width:${window.innerWidth - this.textX}px;
+          height:${window.innerHeight - this.textY}px;
         `)
       this.$refs.textarea.focus()
       for (let shape of this.selectedShapes) {
         if (shape.type === 'text') {
           this.context.font = `${this.textFontSize}px sans-serif`
-          this.textW = Math.ceil(this.context.measureText(shape.src).width)
-          this.textH = this.textFontSize + this.textFontSize / 2
+          this.textW = this.getTextWidth(shape.src)
+          this.textH = this.getTextHeight(this.text)
           shape = {...shape, width: this.textW, height: this.textH, fontSize: this.textFontSize}
           this.emitUpdateFontSize(shape)
         }
@@ -714,7 +735,17 @@ export default {
           );
           this.textShape = true
           if(shape.type !== 'text') this.textShape = false
-          if (shape.type === 'text') this.textFontSize = shape.fontSize
+          if (shape.type === 'text') {
+            this.textFontSize = shape.fontSize
+            this.$refs.textEditPanel.classList.remove('panel_hidden')
+            this.$refs.textEditPanel.setAttribute('style', `
+              top:${this.clientY(shape.y)}px;
+              left:${this.clientX(shape.x)}px;
+            `)
+            this.$refs.textEditPanel.querySelector('.circle').setAttribute('style', `
+              background-color:${shape.textColor}
+            `)
+          }
           this.panelPositionX = this.clientX(shape.x);
           this.panelPositionY = this.clientY(shape.y);
         }
@@ -780,13 +811,21 @@ export default {
       this.context.fillStyle = shape.textColor
       this.context.font = `${shape.fontSize}px sans-serif`
       this.context.textBaseline="top"
-      this.context.fillText(shape.src, shape.x, shape.y + 5)
+
+      const renderingText = shape.src.split('\x0A')
+      let y = shape.y
+      renderingText.forEach((text, i) => {
+        i === 0 ? y = shape.y : y += shape.fontSize + shape.fontSize / 2
+        this.context.fillText(text, this.clientX(shape.x), this.clientY(y))
+      })
     },
     onMouseClick(e) {
       switch(this.tool) {
         case 'text':
           this.$refs.textarea.addEventListener('click', this.textInputToogle)
-          this.textInputToogle(e)
+          let x = this.serverX(e.offsetX)
+          let y = this.serverY(e.offsetY)
+          this.textInputToogle(x, y)
       }
     },
     onMouseDown(e) {
@@ -1036,61 +1075,75 @@ export default {
     encodeCoord(coord) {
       return `${coord[0]}:${coord[1]}`;
     },
-    textInputToogle(e) {
+    textInputToogle(x, y) {
       this.textActive = !this.textActive
       if(this.textActive) {
-        this.$refs.textarea.setAttribute('style', `
-          top:${e.offsetY}px;
-          left:${e.offsetX}px;
-          width:${window.innerWidth - e.offsetX}px;
-          height:${window.innerHeight - e.offsetY}px;
-          font-size:${this.textFontSize}px;
-          color:${this.textColor};
-        `)
-        this.$refs.textEditPanel.classList.remove('panel_hidden')
-        this.$refs.textEditPanel.setAttribute('style', `
-          top:${e.offsetY}px;
-          left:${e.offsetX}px;
-        `)
-        this.textX = e.offsetX
-        this.textY = e.offsetY
-        this.$refs.textarea.classList.add('textarea__show')
-        this.$refs.textarea.focus()
+        this.showTextInput(x, y)
       }
       if(!this.textActive) {
-        this.context.font = `${this.textFontSize}px sans-serif`
-        this.textW = Math.ceil(this.context.measureText(this.text).width)
-        this.textH = this.textFontSize + this.textFontSize / 2
-        this.shape = {
-          type: 'text',
-          x: this.textX,
-          y: this.textY,
-          src: this.text,
-          width: this.textW,
-          height: this.textH,
-          fontSize: this.textFontSize,
-          textColor: this.textColor
-        }
-        this.$refs.textarea.classList.remove('textarea__show')
-        this.$refs.textEditPanel.classList.add('panel_hidden')
-        this.$refs.textColor.setAttribute('style', `
-          display:none;
-        `)
-        if(this.shape.src === '') return
-        this.emitCreateShape(this.shape)
-        this.shapes.push(this.shape)
-        this.rerender()
-        this.text = ''
+        this.hideTextInput()
       }
     },
-    cancelPrintText() {
-      this.text = ''
-      this.$refs.textEditPanel.classList.add('panel_hidden')
+    showTextInput(x, y) {
+      this.textColor = 'black'
+      this.$refs.textEditPanel.querySelector('.circle').setAttribute('style', `
+        background-color:${this.textColor}
+      `)
+      this.$refs.textarea.setAttribute('style', `
+        top:${y}px;
+        left:${x}px;
+        width:${window.innerWidth - x}px;
+        height:${window.innerHeight - y}px;
+        font-size:${this.textFontSize}px;
+        color:${this.textColor};
+      `)
+      this.$refs.textEditPanel.classList.remove('panel_hidden')
+      this.$refs.textEditPanel.setAttribute('style', `
+        top:${y}px;
+        left:${x}px;
+      `)
+      this.textX = x
+      this.textY = y
+      this.$refs.textarea.classList.add('textarea__show')
+      this.$refs.textarea.focus()
+    },
+    hideTextInput(x, y) {
       this.$refs.textarea.classList.remove('textarea__show')
-      this.textActive = false
+      this.$refs.textEditPanel.classList.add('panel_hidden')
       this.$refs.textColor.setAttribute('style', `
-          display:none;
-        `)
+        display:none;
+      `)
+      this.textActive = false
+      if(this.text === '') return
+      this.context.font = `${this.textFontSize}px sans-serif`
+      this.textW = this.getTextWidth(this.text)
+      this.textH = this.getTextHeight(this.text)
+      this.shape = {
+        type: 'text',
+        x: this.textX,
+        y: this.textY,
+        src: this.text,
+        width: this.textW,
+        height: this.textH,
+        fontSize: this.textFontSize,
+        textColor: this.textColor
+      }
+      this.emitCreateShape(this.shape)
+      this.shapes.push(this.shape)
+      this.rerender()
+      this.text = ''
+    },
+    getTextWidth(string) {
+      const words = string.split('\x0A')
+      let longestWord = ''
+      words.forEach(word => {
+        word.length > longestWord.length ? longestWord = word : longestWord
+      })
+      return Math.ceil(this.context.measureText(longestWord).width)
+    },
+    getTextHeight(string) {
+      const lineHeight = this.textFontSize + this.textFontSize / 2
+      return string.split("\x0A").length > 1 ? lineHeight * string.split("\x0A").length - this.textFontSize / 2 : lineHeight
     },
     emitGetShapes() {
       this.$socket.emit("canvas-get-shapes", {
@@ -1132,6 +1185,9 @@ export default {
     },
     emitUpdateFontSize(shape) {
       this.$socket.emit("canvas-update-fontsize", {canvasId: this.canvasId, shape})
+    },
+    emitChangeShapeColor(shape) {
+      this.$socket.emit("canvas-update-shape-color", {canvasId: this.canvasId, shape})
     },
 
     onClickAddLayer() {
@@ -1186,6 +1242,14 @@ export default {
       this.$refs.textColor.setAttribute('style', `
           display:none;
         `)
+      if(this.isShapeSelected) {
+        this.selectedShapes.forEach(shape => {
+          if(shape.type === 'text') {
+            shape = {...shape, textColor: this.textColor}
+            this.emitChangeShapeColor(shape)
+          }
+        })
+      }  
       this.$refs.textarea.setAttribute('style', `
         color:${this.textColor};
         top:${this.textY}px;
@@ -1194,7 +1258,7 @@ export default {
         height:${window.innerHeight - e.offsetY}px;
         font-size:${this.textFontSize}px;
       `)  
-      this.$refs.textarea.focus()  
+      this.$refs.textarea.focus()
     },
 
     debounce(fn, wait) {

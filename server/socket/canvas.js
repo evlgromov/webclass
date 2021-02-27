@@ -147,6 +147,17 @@ module.exports = (client, io, clients, canvases) => {
       io.to(data.canvasId).emit("canvas-updated-fontsize", {shape, canvasId: data.canvasId});
     }
   })
+
+  client.on('canvas-update-shape-color', async (data) => {
+    const canvas = canvases[data.canvasId];
+    let shape = data.shape
+    const res = await Shape.updateOne({_id: shape._id}, {
+      ...shape
+    });
+    if (res.n) {
+      io.to(data.canvasId).emit("canvas-updated-shape-color", {shape, canvasId: data.canvasId});
+    }
+  })
   /**
    * @param {Object} data - Данные, которые поступили от юзера
    * @param {string} data.canvasId - id холста
