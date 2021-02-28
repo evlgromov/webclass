@@ -157,7 +157,7 @@
       <div v-if=isShapeSelected class="icon" @click="onClickDeleteShape">
         <font-awesome-icon icon="trash"></font-awesome-icon>
       </div>
-      <div v-else class="icon" @click="hideTextInput">
+      <div v-else class="icon" @click="cancelPrintText">
         <font-awesome-icon icon="trash"></font-awesome-icon>
       </div>
       <div
@@ -525,7 +525,7 @@ export default {
         if (shape.type === 'text') {
           this.context.font = `${this.textFontSize}px sans-serif`
           this.textW = this.getTextWidth(shape.src)
-          this.textH = this.getTextHeight(this.text)
+          this.textH = this.getTextHeight(shape.src)
           shape = {...shape, width: this.textW, height: this.textH, fontSize: this.textFontSize}
           this.emitUpdateFontSize(shape)
         }
@@ -809,6 +809,7 @@ export default {
     },
     renderText(shape) {
       this.context.fillStyle = shape.textColor
+      this.context.globalCompositeOperation = "source-over";
       this.context.font = `${shape.fontSize}px sans-serif`
       this.context.textBaseline="top"
 
@@ -822,10 +823,25 @@ export default {
     onMouseClick(e) {
       switch(this.tool) {
         case 'text':
-          this.$refs.textarea.addEventListener('click', this.textInputToogle)
-          let x = this.serverX(e.offsetX)
-          let y = this.serverY(e.offsetY)
-          this.textInputToogle(x, y)
+          const shape = this.firstOverlapShape(
+            this.serverX(e.offsetX),
+            this.serverY(e.offsetY)
+          );
+          if(shape.type === 'text') {
+            this.text = shape.src
+            this.textFontSize = shape.fontSize
+            console.log(shape.textColor);
+            this.textColor = shape.textColor
+            this.selectedShapes.push(shape)
+            this.onClickDeleteShape()
+            this.$refs.textarea.addEventListener('click', this.textInputToogle)
+            this.textInputToogle(shape.x, shape.y)
+          } else {
+            this.$refs.textarea.addEventListener('click', this.textInputToogle)
+            let x = this.serverX(e.offsetX)
+            let y = this.serverY(e.offsetY)
+            this.textInputToogle(x, y)
+          }
       }
     },
     onMouseDown(e) {
@@ -870,7 +886,7 @@ export default {
           }
           this.selectedX = this.serverX(e.offsetX);
           this.selectedY = this.serverY(e.offsetY);
-          break;
+          break;  
       }
     },
     onMouseMove(e) {
@@ -966,11 +982,6 @@ export default {
           };
 
           this.emitCreateShape(this.shape);
-          this.shapes.push({
-            layer: this.currentLayer,
-            type: this.tool,
-            points: this.newShape
-          });
           this.newShape = [];
           break;
         case "eraser":
@@ -979,11 +990,6 @@ export default {
             points: this.newShape.map(this.encodeCoord),
           };
           this.emitCreateShape(this.shape);
-          this.shapes.push({
-            layer: this.currentLayer,
-            type: this.tool,
-            points: this.newShape,
-          });
           this.newShape = [];
           break;
         case "pan":
@@ -1085,12 +1091,11 @@ export default {
       }
     },
     showTextInput(x, y) {
-      this.textColor = 'black'
       this.$refs.textEditPanel.querySelector('.circle').setAttribute('style', `
         background-color:${this.textColor}
       `)
       this.$refs.textarea.setAttribute('style', `
-        top:${y}px;
+        top:${y - this.textFontSize / 3}px;
         left:${x}px;
         width:${window.innerWidth - x}px;
         height:${window.innerHeight - y}px;
@@ -1107,7 +1112,7 @@ export default {
       this.$refs.textarea.classList.add('textarea__show')
       this.$refs.textarea.focus()
     },
-    hideTextInput(x, y) {
+    hideTextInput() {
       this.$refs.textarea.classList.remove('textarea__show')
       this.$refs.textEditPanel.classList.add('panel_hidden')
       this.$refs.textColor.setAttribute('style', `
@@ -1143,7 +1148,11 @@ export default {
     },
     getTextHeight(string) {
       const lineHeight = this.textFontSize + this.textFontSize / 2
-      return string.split("\x0A").length > 1 ? lineHeight * string.split("\x0A").length - this.textFontSize / 2 : lineHeight
+      return string.split("\x0A").length > 1 ? lineHeight * string.split("\x0A").length - this.textFontSize / 2 : lineHeight - this.textFontSize / 2
+    },
+    cancelPrintText() {
+      this.text = ''
+      this.hideTextInput()
     },
     emitGetShapes() {
       this.$socket.emit("canvas-get-shapes", {
