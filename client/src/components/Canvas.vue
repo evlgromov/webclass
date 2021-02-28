@@ -513,7 +513,7 @@ export default {
     onChangeFontSize() {
       this.textFontSize = +this.textFontSize
       this.$refs.textarea.setAttribute('style', `
-          top:${this.textY}px;
+          top:${this.textY - this.textFontSize / 3}px;
           left:${this.textX}px;
           font-size:${this.textFontSize}px;
           color:${this.textColor};
@@ -558,7 +558,6 @@ export default {
             width: img.width,
             height: img.height,
             src: img.src,
-            status: 'add'
           };
           shape.img = img;
           this.emitCreateShape(shape);
@@ -622,8 +621,7 @@ export default {
                     y,
                     height: viewport.height,
                     width: viewport.width,
-                    src: image,
-                    status: 'add'
+                    src: image
                   });
                   if (pages.length === pdf.numPages) {
                     pages.sort((a, b) => a.layer._id - b.layer._id);
@@ -980,8 +978,12 @@ export default {
             x: this.serverX(minX),
             y: this.serverY(minY)
           };
-
           this.emitCreateShape(this.shape);
+          this.shapes.push({
+            layer: this.currentLayer,
+            type: this.tool,
+            points: this.newShape
+          });
           this.newShape = [];
           break;
         case "eraser":
@@ -990,6 +992,11 @@ export default {
             points: this.newShape.map(this.encodeCoord),
           };
           this.emitCreateShape(this.shape);
+          this.shapes.push({
+            layer: this.currentLayer,
+            type: this.tool,
+            points: this.newShape,
+          });
           this.newShape = [];
           break;
         case "pan":
@@ -1134,7 +1141,7 @@ export default {
         textColor: this.textColor
       }
       this.emitCreateShape(this.shape)
-      this.shapes.push(this.shape)
+      this.shapes.push({...this.shape, layer: this.currentLayer})
       this.rerender()
       this.text = ''
     },
@@ -1261,7 +1268,7 @@ export default {
       }  
       this.$refs.textarea.setAttribute('style', `
         color:${this.textColor};
-        top:${this.textY}px;
+        top:${this.textY - this.textFontSize / 3}px;
         left:${this.textX}px;
         width:${window.innerWidth - e.offsetX}px;
         height:${window.innerHeight - e.offsetY}px;
