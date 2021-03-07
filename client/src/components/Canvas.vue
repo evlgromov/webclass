@@ -142,7 +142,7 @@
 
     <div
       class="edit panel"
-      v-if="isShapeSelected && canChange && !textShape"
+      v-if="isShapeSelected && canChange && !selectedShapes.some(shape => shape.type === 'text' ) || isShapeSelected && canChange && selectedShapes.length > 1"
       :style="{ top: panelPositionY + 'px', left: panelPositionX + 'px' }"
     >
       <div class="icon" @click="onClickDeleteShape">
@@ -267,7 +267,13 @@ export default {
     textH: undefined,
     textFontSize: 16,
     textShape: true,
-    textColor: 'black'
+    textColor: 'black',
+
+    minX: undefined,
+    minY: undefined,
+    allSelectedW:0,
+    allSelectedH:0,
+
   }),
   computed: {
     currentShapes() {
@@ -692,6 +698,7 @@ export default {
 
     rerender() {
       this.clearCanvas();
+      this.renderGrid();
       this.renderShapes();
       if (this.isSelectActive) {
         this.renderSelect();
@@ -724,16 +731,23 @@ export default {
         this.context.globalCompositeOperation = "source-over";
 
         this.context.setLineDash([5, 5]);
+
+        let xPoints = [], yPoints = [], minX, maxX, minY, maxY
         for (let shape of this.selectedShapes) {
-          this.context.strokeRect(
-            this.clientX(shape.x),
-            this.clientY(shape.y),
-            shape.width,
-            shape.height
-          );
+          if (shape.type === 'pencil') {
+            shape.points.forEach(i => {
+              xPoints.push(i[0])
+              yPoints.push(i[1])
+            })
+          } else {
+            xPoints.push(shape.x)
+            xPoints.push(shape.x + shape.width)
+            yPoints.push(shape.y)
+            yPoints.push(shape.y + shape.height)
+          }
           this.textShape = true
           if(shape.type !== 'text') this.textShape = false
-          if (shape.type === 'text') {
+          if (shape.type === 'text' && this.selectedShapes.length === 1) {
             this.textFontSize = shape.fontSize
             this.$refs.textEditPanel.classList.remove('panel_hidden')
             this.$refs.textEditPanel.setAttribute('style', `
@@ -744,9 +758,22 @@ export default {
               background-color:${shape.textColor}
             `)
           }
-          this.panelPositionX = this.clientX(shape.x);
-          this.panelPositionY = this.clientY(shape.y);
         }
+        maxX = Math.max(...xPoints)
+        this.minX = Math.min(...xPoints)
+        this.minY = Math.min(...yPoints)
+        maxY = Math.max(...yPoints)
+        maxX - this.minX === 0 ? this.allSelectedW = 1 : this.allSelectedW = maxX - this.minX
+        maxY - this.minY === 0 ? this.allSelectedH = 1 : this.allSelectedH = maxY - this.minY
+        this.context.strokeRect(
+          this.clientX(this.minX),
+          this.clientY(this.minY),
+          this.allSelectedW,
+          this.allSelectedH
+        );
+        this.panelPositionX = this.clientX(this.minX);
+        this.panelPositionY = this.clientY(this.minY);
+
         this.context.setLineDash([]);
       }
       if (this.selectedW || this.selectedH) {
@@ -817,6 +844,50 @@ export default {
         i === 0 ? y = shape.y : y += shape.fontSize + shape.fontSize / 2
         this.context.fillText(text, this.clientX(shape.x), this.clientY(y))
       })
+    },
+    renderGrid () {
+      let ctx = this.context;
+  
+      if ( ! ctx ) return;
+      
+      let bkg = "#fff";
+      let maj = "#d1d1d1";
+      let min = "#ededed";
+      let txt = "#000";
+      let num = false;
+      
+      let W = ctx.canvas.width;
+      let H = ctx.canvas.height;
+
+      this.context.fillStyle = bkg;
+      this.context.fillRect( 0, 0, W, H );
+      this.context.lineWidth = .5;
+      
+      for ( let x = 0; x < W; x += 10 ) {
+        this.context.beginPath();
+        this.context.fillStyle = txt;
+        this.context.strokeStyle = min;
+        if ( x % 50 == 0 ) { 
+          this.context.strokeStyle = maj; 
+          num && this.context.fillText( x, x, 10 );
+        }
+        this.context.moveTo( x, 0 ); 
+        this.context.lineTo( x, H );
+        this.context.stroke();
+      }
+      
+      for ( let y = 0; y < H; y += 10 ) {
+        this.context.beginPath();
+        this.context.fillStyle = txt;
+        this.context.strokeStyle = min;
+        if ( y % 50 == 0 ) { 
+          this.context.strokeStyle = maj;
+          num && y && ctx.fillText( y, 0, y + 8 );
+        }
+        this.context.moveTo( 0, y ); 
+        this.context.lineTo( W, y );
+        this.context.stroke();
+      }
     },
     onMouseClick(e) {
       switch(this.tool) {
@@ -1047,7 +1118,7 @@ export default {
     },
     anyOverlapWithSelectedShapes(x, y) {
       for (let shape of this.selectedShapes) {
-        if (this.overlap(shape.x, shape.y, shape.width, shape.height, x, y)) {
+        if (this.overlap(shape.x, shape.y, shape.width, shape.height, x, y) || this.overlap(this.minX, this.minY, this.allSelectedW, this.allSelectedH, x, y)) {
           return true;
         }
       }
