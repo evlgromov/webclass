@@ -142,19 +142,19 @@
 
     <div
       class="edit panel"
-      v-if="isShapeSelected && canChange && !selectedShapes.some(shape => shape.type === 'text' ) || isShapeSelected && canChange && selectedShapes.length > 1"
+      v-if="isShapeSelected && canChange && !allSelectedIsText"
       :style="{ top: panelPositionY + 'px', left: panelPositionX + 'px' }"
     >
       <div class="icon" @click="onClickDeleteShape">
         <font-awesome-icon icon="trash"></font-awesome-icon>
       </div>
     </div>
-
+    
     <div
       class="edit panel panel_hidden"
       ref=textEditPanel
     >
-      <div v-if=isShapeSelected class="icon" @click="onClickDeleteShape">
+      <div v-if="isShapeSelected" class="icon" @click="onClickDeleteShape">
         <font-awesome-icon icon="trash"></font-awesome-icon>
       </div>
       <div v-else class="icon" @click="cancelPrintText">
@@ -302,6 +302,11 @@ export default {
         this.selectedH
       );
     },
+    allSelectedIsText() {
+      if(this.selectedShapes.length > 0) {
+        return !this.selectedShapes.some(shape => shape.type !== 'text')
+      }
+    },
   },
   watch: {
     currentLayer: function(n, o) {
@@ -343,6 +348,11 @@ export default {
     },
     isShapeSelected: function(n, o) {
       if(!n) {
+        this.$refs.textEditPanel.classList.add('panel_hidden')
+      }
+    },
+    selectedShapes: function(n, o) {
+      if (!this.allSelectedIsText) {
         this.$refs.textEditPanel.classList.add('panel_hidden')
       }
     }
@@ -750,7 +760,7 @@ export default {
           }
           this.textShape = true
           if(shape.type !== 'text') this.textShape = false
-          if (shape.type === 'text' && this.selectedShapes.length === 1) {
+          if (this.allSelectedIsText) {
             this.textFontSize = shape.fontSize
             this.$refs.textEditPanel.classList.remove('panel_hidden')
             this.$refs.textEditPanel.setAttribute('style', `
