@@ -204,7 +204,8 @@
         <div class="circle circle_blue" data-color='blue'></div>
       </div>
     </div>
-    <canvas ref="canvas" class="workspace__canvas canvas"></canvas>
+    <canvas id="grid"></canvas>
+    <canvas id="canvas" ref="canvas" class="workspace__canvas canvas"></canvas>
     <textarea
       class="textarea"
       ref='textarea'
@@ -222,11 +223,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 export default {
   name: "Canvas",
   data: () => ({
+    grid: false,
     canvas: false,
     inputImg: false,
     inputPdf: false,
 
     canvasId: false,
+    gridCtx: false,
     context: false,
     canvasW: 0,
     canvasH: 0,
@@ -846,7 +849,7 @@ export default {
       })
     },
     renderGrid () {
-      let ctx = this.context;
+      let ctx = this.gridCtx;
   
       if ( ! ctx ) return;
       
@@ -859,34 +862,34 @@ export default {
       let W = ctx.canvas.width;
       let H = ctx.canvas.height;
 
-      this.context.fillStyle = bkg;
-      this.context.fillRect( 0, 0, W, H );
-      this.context.lineWidth = .5;
+      ctx.fillStyle = bkg;
+      ctx.fillRect( 0, 0, W, H );
+      ctx.lineWidth = .5;
       
       for ( let x = 0; x < W; x += 10 ) {
-        this.context.beginPath();
-        this.context.fillStyle = txt;
-        this.context.strokeStyle = min;
+        ctx.beginPath();
+        ctx.fillStyle = txt;
+        ctx.strokeStyle = min;
         if ( x % 50 == 0 ) { 
-          this.context.strokeStyle = maj; 
-          num && this.context.fillText( x, x, 10 );
+          ctx.strokeStyle = maj; 
+          num && ctx.fillText( x, x, 10 );
         }
-        this.context.moveTo( x, 0 ); 
-        this.context.lineTo( x, H );
-        this.context.stroke();
+        ctx.moveTo( x, 0 ); 
+        ctx.lineTo( x, H );
+        ctx.stroke();
       }
       
       for ( let y = 0; y < H; y += 10 ) {
-        this.context.beginPath();
-        this.context.fillStyle = txt;
-        this.context.strokeStyle = min;
+        ctx.beginPath();
+        ctx.fillStyle = txt;
+        ctx.strokeStyle = min;
         if ( y % 50 == 0 ) { 
-          this.context.strokeStyle = maj;
+          ctx.strokeStyle = maj;
           num && y && ctx.fillText( y, 0, y + 8 );
         }
-        this.context.moveTo( 0, y ); 
-        this.context.lineTo( W, y );
-        this.context.stroke();
+        ctx.moveTo( 0, y ); 
+        ctx.lineTo( W, y );
+        ctx.stroke();
       }
     },
     onMouseClick(e) {
@@ -1287,6 +1290,8 @@ export default {
     onResizeCanvas() {
       this.canvas.width = window.innerWidth;
       this.canvas.height = window.innerHeight;
+      this.grid.width = window.innerWidth;
+      this.grid.height = window.innerHeight;
       const canvasData = this.canvas.getBoundingClientRect();
       this.canvasW = canvasData.width;
       this.canvasH = canvasData.height;
@@ -1366,11 +1371,15 @@ export default {
   },
   mounted() {
     this.$root.$emit("fullscreen", true);
-    this.canvas = document.querySelector("canvas");
+    this.grid = document.querySelector("#grid");
+    this.gridCtx = this.grid.getContext("2d");
+    this.canvas = document.querySelector("#canvas");
     this.context = this.canvas.getContext("2d");
 
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+    this.grid.width = window.innerWidth;
+    this.grid.height = window.innerHeight;
 
     const canvasData = this.canvas.getBoundingClientRect();
     this.canvasW = canvasData.width;
